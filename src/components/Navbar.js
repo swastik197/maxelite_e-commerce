@@ -1,5 +1,6 @@
 "use client"
 import React, { useState } from 'react'
+import Link from 'next/link'
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
@@ -10,7 +11,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 const Navbar = () => {
   const [categorystat, setCategorystat] = useState(false)
-
+  const [profilestat, setProfilestat] = useState(false)
   const categories = [
     'Electronics',
     'Fashion',
@@ -20,6 +21,11 @@ const Navbar = () => {
     'Books',
     'Toys & Games',
     'Automotive'
+  ]
+  const Profiles=[
+    'My Account',
+    'Orders',
+
   ]
 
   return (
@@ -64,9 +70,11 @@ const Navbar = () => {
         </form>
 
         <div className='hidden gap-4 lg:flex p-2 m-2'>
-          <div className='flex gap-1 mx-4 '>
-            <PersonIcon fontSize="medium" />
-            <p>LOGIN</p>
+          <div className='relative flex gap-1 mx-4 '>
+            <PersonIcon fontSize="medium" 
+             />
+           <Link href='/Auth'>Login</Link>
+          
           </div>
           <div className='flex gap-1 mx-4'>
             <FavoriteBorderIcon />

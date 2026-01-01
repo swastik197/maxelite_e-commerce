@@ -7,6 +7,9 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   
   const [formData, setFormData] = useState({
     name: '',
@@ -16,11 +19,87 @@ const AuthPage = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+    setError('')
+  }
+
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSuccess('Login successful!')
+        // Store token or user data
+        localStorage.setItem('token', data.token)
+        // Redirect to home or dashboard
+        window.location.href = '/'
+      } else {
+        setError(data.message || 'Login failed')
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSignup = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    
+    try {
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSuccess('Account created successfully!')
+        // Optionally auto-login after signup
+        setTimeout(() => {
+          setIsLogin(true)
+          setFormData({ name: '', email: formData.email, password: '' })
+        }, 1500)
+      } else {
+        setError(data.message || 'Signup failed')
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log(isLogin ? 'Login:' : 'Signup:', formData)
+    if (isLogin) {
+      handleLogin(e)
+    } else {
+      handleSignup(e)
+    }
   }
 
   return (
@@ -69,7 +148,12 @@ const AuthPage = () => {
           {/* Toggle Tabs */}
           <div className='flex mb-8 bg-gray-200 rounded-full p-1.5'>
             <button
-              onClick={() => setIsLogin(true)}
+              type='button'
+              onClick={() => {
+                setIsLogin(true)
+                setError('')
+                setSuccess('')
+              }}
               className={`flex-1 py-3 text-sm font-medium rounded-full transition-all duration-300 ${
                 isLogin ? 'bg-purple-600 text-white shadow-md' : 'text-gray-600'
               }`}
@@ -77,7 +161,12 @@ const AuthPage = () => {
               Sign In
             </button>
             <button
-              onClick={() => setIsLogin(false)}
+              type='button'
+              onClick={() => {
+                setIsLogin(false)
+                setError('')
+                setSuccess('')
+              }}
               className={`flex-1 py-3 text-sm font-medium rounded-full transition-all duration-300 ${
                 !isLogin ? 'bg-purple-600 text-white shadow-md' : 'text-gray-600'
               }`}
@@ -85,6 +174,18 @@ const AuthPage = () => {
               Sign Up
             </button>
           </div>
+
+          {/* Error/Success Messages */}
+          {error && (
+            <div className='bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm'>
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className='bg-green-50 border border-green-200 text-green-600 px-4 py-2 rounded-lg text-sm'>
+              {success}
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className='space-y-4'>
@@ -95,7 +196,7 @@ const AuthPage = () => {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder='Full Name'
-                className='w-full px-5 py-3.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition'
+                className='w-full px-5 py-3.5 text-gray-900  text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition'
                 required
               />
             )}
@@ -106,7 +207,7 @@ const AuthPage = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder='Email'
-              className='w-full px-5 py-3.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition'
+              className='w-full px-5 text-gray-900 py-3.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition'
               required
             />
 
@@ -117,7 +218,7 @@ const AuthPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder='Password'
-                className='w-full px-5 py-3.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition pr-10'
+                className='w-full px-5 py-3.5 text-gray-900 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition pr-10'
                 required
               />
               <button
@@ -146,9 +247,10 @@ const AuthPage = () => {
 
             <button
               type='submit'
-              className='w-full bg-purple-600 text-white py-3.5 rounded-xl text-sm font-semibold hover:bg-purple-700 transition duration-300 shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5'
+              disabled={loading}
+              className='w-full bg-purple-600 text-white py-3.5 rounded-xl text-sm font-semibold hover:bg-purple-700 transition duration-300 shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed'
             >
-              {isLogin ? 'Sign In' : 'Create Account'}
+              {loading ? (isLogin ? 'Signing In...' : 'Creating Account...') : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
           </form>
 
