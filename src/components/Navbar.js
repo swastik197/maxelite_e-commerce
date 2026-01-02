@@ -8,8 +8,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-
+import { useAuth } from '@/context/AuthContext';
 const Navbar = () => {
+  const {user, logout, loading}=useAuth()
   const [categorystat, setCategorystat] = useState(false)
   const [profilestat, setProfilestat] = useState(false)
   const categories = [
@@ -27,7 +28,7 @@ const Navbar = () => {
     'Orders',
 
   ]
-
+if (loading) return <nav className="p-4 bg-gray-800 text-white">Loading...</nav>;
   return (
     <>
       <nav className='bg-purple-500 flex justify-between items-center'>
@@ -73,7 +74,23 @@ const Navbar = () => {
           <div className='relative flex gap-1 mx-4 '>
             <PersonIcon fontSize="medium" 
              />
-           <Link href='/Auth'>Login</Link>
+           {/* <Link href='/Auth'>Login</Link> */}
+           {user ? (
+          <div className="flex gap-4 items-center">
+            <span>Hello, {user.name}</span>
+            <button 
+              onClick={logout} 
+              className="bg-red-500 px-3 py-1 rounded text-sm hover:bg-red-600"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-4">
+             <Link href="/Auth">Login</Link>
+             
+          </div>
+        )}
           
           </div>
           <div className='flex gap-1 mx-4'>

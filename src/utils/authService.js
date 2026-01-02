@@ -5,6 +5,7 @@ const key = process.env.key
 function setUser(newuser) {
     return jwt.sign({
         id: newuser.id,
+        name: newuser.name,
         email: newuser.email,
         role: newuser.role
     },key)
