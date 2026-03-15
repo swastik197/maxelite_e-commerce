@@ -17,19 +17,10 @@ import categoriesData from '@/config/categories.json';
 import productsData from '@/config/products.json';
 
 const InteriorCard = () => {
-    // Define colors to match the image
-    const cardColor = 'bg-[#0f3c4c]'; // Deep Teal
-    const cardColorHex = '#001e3a';   // For use in arbitrary shadow values
+    const cardColor = 'bg-[#0f3c4c]';
+    const cardColorHex = '#001e3a';
     const bgColor = 'bg-white';
-    //  const bgColor = 'bg-[#BDD8E9]';
-    // const bgColorHex = '#BDD8E9';
     const bgColorHex = '#FFFFFF';
-
-
-
-
-
-
 
     const [categorystat, setCategorystat] = useState(false)
     const [profilestat, setProfilestat] = useState(false)
@@ -37,9 +28,10 @@ const InteriorCard = () => {
     const [searchFocused, setSearchFocused] = useState(false)
     const [suggestions, setSuggestions] = useState([])
     const [recentSearches, setRecentSearches] = useState([])
+    const [isLoaded, setIsLoaded] = useState(false)
     const searchRef = useRef(null)
+    const router = useRouter()
 
-    // Use categories from config
     const categories = categoriesData
 
     const Profiles = [
@@ -48,15 +40,17 @@ const InteriorCard = () => {
         { name: 'Wishlist', href: '/wishlist' },
     ]
 
-    // Load recent searches from localStorage
+    // Trigger entrance animations
     useEffect(() => {
-        const saved = localStorage.getItem('recentSearches')
-        if (saved) {
-            setRecentSearches(JSON.parse(saved))
-        }
+        const timer = setTimeout(() => setIsLoaded(true), 100)
+        return () => clearTimeout(timer)
     }, [])
 
-    // Handle click outside to close search suggestions
+    useEffect(() => {
+        const saved = localStorage.getItem('recentSearches')
+        if (saved) setRecentSearches(JSON.parse(saved))
+    }, [])
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -67,7 +61,6 @@ const InteriorCard = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
-    // Filter products based on search query
     useEffect(() => {
         if (searchQuery.trim().length > 0) {
             const filtered = productsData
@@ -85,24 +78,18 @@ const InteriorCard = () => {
     const handleSearch = (e) => {
         e.preventDefault()
         if (searchQuery.trim()) {
-            // Save to recent searches
             const newRecent = [searchQuery, ...recentSearches.filter(s => s !== searchQuery)].slice(0, 5)
             setRecentSearches(newRecent)
             localStorage.setItem('recentSearches', JSON.stringify(newRecent))
-
-            // Navigate to results page
             router.push(`/results?q=${encodeURIComponent(searchQuery)}`)
             setSearchFocused(false)
         }
     }
 
     const handleSuggestionClick = (product) => {
-        // Save product name to recent searches
         const newRecent = [product.name, ...recentSearches.filter(s => s !== product.name)].slice(0, 5)
         setRecentSearches(newRecent)
         localStorage.setItem('recentSearches', JSON.stringify(newRecent))
-
-        // Navigate to product page
         router.push(`/product/${product.slug}`)
         setSearchQuery('')
         setSearchFocused(false)
@@ -126,21 +113,10 @@ const InteriorCard = () => {
         localStorage.setItem('recentSearches', JSON.stringify(newRecent))
     }
 
-    // Trending searches (static for demo)
     const trendingSearches = ['Modern Sofa', 'Oak Furniture', 'Bedroom Decor', 'Office Chair']
-
-
-
-
-
-
 
     return (
         <div className={`min-h-96 md:min-h-screen ${bgColor} border-white flex items-center justify-center pb-6 lg:pb-0.5`}>
-
-            {/* MAIN CARD CONTAINER 
-        We use 'relative' to position the tabs and cutouts absolutely.
-      */}
             <div className={`relative w-full max-w-screen h-full sm:h-screen ${cardColor} rounded-[0px] rounded-tl-none flex overflow-visible`}
                 style={{
                     backgroundImage: "url('/main.png')",
@@ -149,112 +125,42 @@ const InteriorCard = () => {
                     backgroundRepeat: 'no-repeat'
                 }}>
 
-                {/* C:\Users\user\Desktop\maxelite_ecommerce\public\==============================
-            1. TOP LEFT TAB SYSTEM
-           ============================== */}
+                {/* Animated gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30 z-[1]" />
 
-                {/* The Tab Itself */}
+                {/* Floating particles */}
+                <div className="absolute inset-0 overflow-hidden z-[1] pointer-events-none">
+                    <div className="absolute top-[20%] left-[10%] w-2 h-2 bg-white/20 rounded-full animate-[floatParticle_8s_ease-in-out_infinite]" />
+                    <div className="absolute top-[60%] left-[80%] w-3 h-3 bg-purple-300/15 rounded-full animate-[floatParticle_10s_ease-in-out_infinite_1s]" />
+                    <div className="absolute top-[40%] left-[50%] w-1.5 h-1.5 bg-blue-300/20 rounded-full animate-[floatParticle_6s_ease-in-out_infinite_2s]" />
+                    <div className="absolute top-[80%] left-[30%] w-2.5 h-2.5 bg-white/10 rounded-full animate-[floatParticle_12s_ease-in-out_infinite_0.5s]" />
+                    <div className="absolute top-[15%] left-[70%] w-1 h-1 bg-purple-200/25 rounded-full animate-[floatParticle_9s_ease-in-out_infinite_3s]" />
+                </div>
 
-
-
-
-
-                {/* <div className={`relative w-64 h-16 ${bgColor} rounded-br-[30px] `}>
-                   <div className="  w-16 h-16 pointer-events-none overflow-hidden">
-
-                        <div
-                            className={`absolute top-[64] w-3/4 h-1/2 border-0 ${bgColor} rounded-br-[-30px]`}
-                           >
-                            <div
-                                className={`w-auto h-full border-0  bg-[#001e3a] rounded-tl-[30px]`}
-                               ></div>
-                        </div>
-                    </div>
-                    
-                </div> */}
-
-
-
-
-                {/* The "Scoop" (Inverted Radius) connecting Tab to Card Body */}
                 <div className="  w-16 h-16 pointer-events-none overflow-hidden">
-                    {/* Logic: A transparent box with a rounded BOTTOM-LEFT corner.
-            The Shadow matches the card color and is cast down and left 
-            to fill the empty space, creating a concave curve.
-          */}
-                    {/* <div
-                        className={`w-3/4 h-1/2 border-0 ${bgColor} rounded-br-[-30px]`}
-                        style={{ boxShadow: `-40px 40px 0 0 ${cardColorHex}` }}>
-                        <div
-                            className={`w-full h-full border-0  bg-[#001e3a] rounded-tl-[30px]`}
-                            ></div>
-                    </div> */}
                 </div>
 
-
-                {/* ==============================
-            2. BOTTOM RIGHT CUTOUT SYSTEM
-           ============================== */}
-
-                {/* The "Hole" (White "Hill" blocking the card) */}
+                {/* Bottom cutouts */}
                 <div className={`absolute lg:hidden -bottom-1 right-4 sm:right-8 md:right-24 w-24 sm:w-32 md:w-40 h-16 sm:h-20 md:h-24 ${bgColor} rounded-t-full z-10`}></div>
-
-                {/* Left Smooth Connector for the Hole */}
                 <div className="absolute lg:hidden bottom-0 right-[7rem] sm:right-[10rem] md:right-[16rem] w-8 sm:w-10 md:w-12 h-8 sm:h-10 md:h-12 z-10">
-                    <div
-                        className="w-full h-full bg-transparent rounded-br-[15px] sm:rounded-br-[20px] md:rounded-br-[25px]"
-                        style={{
-                            boxShadow: `15px 15px 0 0 ${bgColorHex}`
-                        }}
-                    />
-                    {/* Larger shadows for bigger screens */}
-                    <div
-                        className="hidden sm:block w-full h-full bg-transparent rounded-br-[20px] absolute top-0 left-0"
-                        style={{
-                            boxShadow: `20px 20px 0 0 ${bgColorHex}`
-                        }}
-                    />
-                    <div
-                        className="hidden md:block w-full h-full bg-transparent rounded-br-[25px] absolute top-0 left-0"
-                        style={{
-                            boxShadow: `25px 25px 0 0 ${bgColorHex}`
-                        }}
-                    />
+                    <div className="w-full h-full bg-transparent rounded-br-[15px] sm:rounded-br-[20px] md:rounded-br-[25px]" style={{ boxShadow: `15px 15px 0 0 ${bgColorHex}` }} />
+                    <div className="hidden sm:block w-full h-full bg-transparent rounded-br-[20px] absolute top-0 left-0" style={{ boxShadow: `20px 20px 0 0 ${bgColorHex}` }} />
+                    <div className="hidden md:block w-full h-full bg-transparent rounded-br-[25px] absolute top-0 left-0" style={{ boxShadow: `25px 25px 0 0 ${bgColorHex}` }} />
                 </div>
-
-                {/* Right Smooth Connector for the Hole */}
                 <div className="lg:hidden absolute bottom-0 right-2 sm:right-4 md:right-12 w-8 sm:w-10 md:w-12 h-8 sm:h-10 md:h-12 z-10">
-                    <div
-                        className="w-full h-full bg-transparent rounded-bl-[15px] sm:rounded-bl-[20px] md:rounded-bl-[25px]"
-                        style={{
-                            boxShadow: `-15px 15px 0 0 ${bgColorHex}`
-                        }}
-                    />
-                    {/* Larger shadows for bigger screens */}
-                    <div
-                        className="hidden sm:block w-full h-full bg-transparent rounded-bl-[20px] absolute top-0 left-0"
-                        style={{
-                            boxShadow: `-20px 20px 0 0 ${bgColorHex}`
-                        }}
-                    />
-                    <div
-                        className="hidden md:block w-full h-full bg-transparent rounded-bl-[25px] absolute top-0 left-0"
-                        style={{
-                            boxShadow: `-25px 25px 0 0 ${bgColorHex}`
-                        }}
-                    />
+                    <div className="w-full h-full bg-transparent rounded-bl-[15px] sm:rounded-bl-[20px] md:rounded-bl-[25px]" style={{ boxShadow: `-15px 15px 0 0 ${bgColorHex}` }} />
+                    <div className="hidden sm:block w-full h-full bg-transparent rounded-bl-[20px] absolute top-0 left-0" style={{ boxShadow: `-20px 20px 0 0 ${bgColorHex}` }} />
+                    <div className="hidden md:block w-full h-full bg-transparent rounded-bl-[25px] absolute top-0 left-0" style={{ boxShadow: `-25px 25px 0 0 ${bgColorHex}` }} />
                 </div>
 
+                {/* ============================== CARD CONTENT ============================== */}
+                <div className="w-full me-10 sm:me-0 gap-8 h-full relative z-[2] flex flex-col items-center justify-center p-1 sm:p-12 text-center">
 
-                {/* ============================== 3. CARD CONTENT ============================== */}
-
-
-                <div className="w-full me-10 sm:me-0 gap-8 h-full relative z-0 flex flex-col items-center justify-center p-1  sm:p-12 text-center">
-
+                    {/* Mobile search bar */}
                     <form
                         ref={searchRef}
                         onSubmit={handleSearch}
-                        className='flex rounded-3xl mt-4 p-2  bg-[#49769F] sm:hidden items-center w-full relative'
+                        className={`flex rounded-3xl mt-4 p-2 bg-[#49769F] sm:hidden items-center w-full relative transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                     >
                         <input
                             className='px-2 text-white w-full focus:outline-none placeholder-purple-200'
@@ -267,24 +173,15 @@ const InteriorCard = () => {
                             <SearchIcon className="cursor-pointer hover:text-purple-200" />
                         </button>
 
-                        {/* Search Suggestions Dropdown */}
                         {searchFocused && (
-                            <div className='absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-[70vh] overflow-y-auto'>
-                                {/* Search Results */}
+                            <div className='absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-[70vh] overflow-y-auto animate-[fadeInDown_0.25s_ease-out]'>
                                 {suggestions.length > 0 && (
                                     <div className='p-3'>
                                         <p className='text-xs font-semibold text-gray-500 uppercase mb-2 px-2'>Products</p>
                                         {suggestions.map((product) => (
-                                            <div
-                                                key={product.id}
-                                                onClick={() => handleSuggestionClick(product)}
-                                                className='flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors'
-                                            >
-                                                <img
-                                                    src={product.image}
-                                                    alt={product.name}
-                                                    className='w-12 h-12 object-cover rounded-lg bg-gray-100'
-                                                />
+                                            <div key={product.id} onClick={() => handleSuggestionClick(product)}
+                                                className='flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors'>
+                                                <img src={product.image} alt={product.name} className='w-12 h-12 object-cover rounded-lg bg-gray-100' />
                                                 <div className='flex-1 min-w-0'>
                                                     <p className='text-gray-800 font-medium truncate'>{product.name}</p>
                                                     <p className='text-purple-600 font-semibold text-sm'>${product.price}</p>
@@ -297,84 +194,54 @@ const InteriorCard = () => {
                                         ))}
                                     </div>
                                 )}
-
-                                {/* No Results */}
                                 {searchQuery.trim() && suggestions.length === 0 && (
                                     <div className='p-6 text-center text-gray-500'>
                                         <p>No products found for "{searchQuery}"</p>
                                         <p className='text-sm mt-1'>Try a different search term</p>
                                     </div>
                                 )}
-
-                                {/* Recent Searches */}
                                 {!searchQuery.trim() && recentSearches.length > 0 && (
                                     <div className='p-3 border-b'>
                                         <div className='flex items-center justify-between px-2 mb-2'>
                                             <p className='text-xs font-semibold text-gray-500 uppercase'>Recent Searches</p>
-                                            <button
-                                                onClick={clearRecentSearches}
-                                                className='text-xs text-purple-600 hover:text-purple-700'
-                                            >
-                                                Clear All
-                                            </button>
+                                            <button onClick={clearRecentSearches} className='text-xs text-purple-600 hover:text-purple-700'>Clear All</button>
                                         </div>
                                         {recentSearches.map((search, index) => (
-                                            <div
-                                                key={index}
-                                                onClick={() => handleRecentSearchClick(search)}
-                                                className='flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors group'
-                                            >
+                                            <div key={index} onClick={() => handleRecentSearchClick(search)}
+                                                className='flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors group'>
                                                 <div className='flex items-center gap-2'>
                                                     <HistoryIcon className='w-4 h-4 text-gray-400' />
                                                     <span className='text-gray-700'>{search}</span>
                                                 </div>
-                                                <button
-                                                    onClick={(e) => removeRecentSearch(search, e)}
-                                                    className='opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all'
-                                                >
+                                                <button onClick={(e) => removeRecentSearch(search, e)} className='opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all'>
                                                     <CloseIcon className='w-4 h-4 text-gray-400' />
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
                                 )}
-
-                                {/* Trending Searches */}
                                 {!searchQuery.trim() && (
                                     <div className='p-3'>
                                         <p className='text-xs font-semibold text-gray-500 uppercase mb-2 px-2 flex items-center gap-1'>
-                                            <TrendingUpIcon className='w-4 h-4' />
-                                            Trending Searches
+                                            <TrendingUpIcon className='w-4 h-4' /> Trending Searches
                                         </p>
                                         <div className='flex flex-wrap gap-2 px-2'>
                                             {trendingSearches.map((search, index) => (
-                                                <button
-                                                    key={index}
-                                                    onClick={() => {
-                                                        setSearchQuery(search)
-                                                        handleRecentSearchClick(search)
-                                                    }}
-                                                    className='px-3 py-1.5 bg-gray-100 hover:bg-purple-100 text-gray-700 rounded-full text-sm transition-colors'
-                                                >
+                                                <button key={index} onClick={() => { setSearchQuery(search); handleRecentSearchClick(search) }}
+                                                    className='px-3 py-1.5 bg-gray-100 hover:bg-purple-100 text-gray-700 rounded-full text-sm transition-colors'>
                                                     {search}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Category Quick Links */}
                                 {!searchQuery.trim() && (
                                     <div className='p-3 border-t'>
                                         <p className='text-xs font-semibold text-gray-500 uppercase mb-2 px-2'>Categories</p>
                                         <div className='grid grid-cols-2 gap-1'>
                                             {categories.slice(0, 4).map((category) => (
-                                                <Link
-                                                    key={category.id}
-                                                    href={`/category?slug=${category.slug}`}
-                                                    onClick={() => setSearchFocused(false)}
-                                                    className='p-2 hover:bg-purple-50 rounded-lg text-gray-700 text-sm transition-colors'
-                                                >
+                                                <Link key={category.id} href={`/category?slug=${category.slug}`} onClick={() => setSearchFocused(false)}
+                                                    className='p-2 hover:bg-purple-50 rounded-lg text-gray-700 text-sm transition-colors'>
                                                     {category.name}
                                                 </Link>
                                             ))}
@@ -385,42 +252,38 @@ const InteriorCard = () => {
                         )}
                     </form>
 
-
-
-
-
-
-
-
-
-
-
-
-                    {/* Text Content */}
+                    {/* Text Content with staggered reveal */}
                     <div className="mb-8 z-10 relative">
-                        <h1 className="text-5xl sm:text-6xl md:text-8xl text-white font-light mb-2">
+                        <h1 className={`text-5xl sm:text-6xl md:text-8xl text-white font-light mb-2 transition-all duration-1000 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                             Discover Your Perfect
                         </h1>
-                        <h1 className="text-5xl sm:text-6xl md:text-8xl text-white font-medium">
+                        <h1 className={`text-5xl sm:text-6xl md:text-8xl text-white font-medium transition-all duration-1000 ease-out delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                             Space
                         </h1>
+                        {/* Animated underline */}
+                        
                     </div>
 
-                    {/* Image */}
-                    {/* Using a mix-blend-mode or opacity can help integrate the image 
-             if you want the background color to tint it, but here we just 
-             display it cleanly with rounded corners.
-          */}
                     <div className="relative w-full h-64 md:h-80 rounded-3xl overflow-hidden shadow-inner">
-
                     </div>
-
                 </div>
-
             </div>
+
+            {/* Keyframe animations */}
+            <style jsx global>{`
+                @keyframes floatParticle {
+                    0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.3; }
+                    25% { transform: translateY(-30px) translateX(10px); opacity: 0.6; }
+                    50% { transform: translateY(-15px) translateX(-10px); opacity: 0.4; }
+                    75% { transform: translateY(-40px) translateX(5px); opacity: 0.7; }
+                }
+                @keyframes fadeInDown {
+                    from { transform: translateY(-10px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };
 
 export default InteriorCard;
-

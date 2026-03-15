@@ -9,37 +9,47 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // Prevents "flicker" on load
+  const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const router = useRouter();
 
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  // 1. Check if user is logged in immediately when the app loads
   useEffect(() => {
     checkUserLoggedIn();
   }, []);
 
-  // Function to ask the server "Who is this user?"
   const checkUserLoggedIn = async () => {
     try {
-      const res = await fetch("/api/me"); // Hits the JWT verification route
+      const res = await fetch("/api/me");
       const data = await res.json();
       
       if (res.ok) {
-        setUser(data.user); // Set user data (Name, Email)
+        setUser(data.user);
       } else {
         setUser(null);
       }
     } catch (error) {
       setUser(null);
     } finally {
-      setLoading(false); // Stop showing the loading spinner
+      setLoading(false);
     }
   };
 
-  // 2. Login Function
+  // Re-fetch user data from backend (call after profile/address/pic updates)
+  const refreshUser = async () => {
+    try {
+      const res = await fetch("/api/me");
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.log("Error refreshing user:", error);
+    }
+  };
+
   const login = async (email, password) => {
     const res = await fetch("/api/login", {
       method: "POST",
@@ -50,28 +60,27 @@ export const AuthProvider = ({ children }) => {
     const data = await res.json();
 
     if (res.ok) {
-      setUser(data.user); // Update UI instantly
-      router.push("/");   // Redirect to home
+      await refreshUser(); // Fetch full user data after login
+      router.push("/");
     } else {
-      alert(data.message || "Login failed"); // Handle error
+      alert(data.message || "Login failed");
     }
   };
 
-  // 3. Logout Function
   const logout = async () => {
-    await fetch("/api/logout", { method: "POST" }); // Tell server to kill cookie
-    setUser(null); // Clear local state
+    await fetch("/api/logout", { method: "POST" });
+    setUser(null);
     router.push("/"); 
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, openAuthModal, closeAuthModal }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, refreshUser, openAuthModal, closeAuthModal }}>
       <AuthModal isOpen={isAuthModalOpen} onClose={closeAuthModal} />
       {loading ? (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-gray-600">Loading...</p>
+            <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-gray-400">Loading...</p>
           </div>
         </div>
       ) : (

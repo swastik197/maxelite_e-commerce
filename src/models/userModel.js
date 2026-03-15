@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
     },
+    phone: {
+        type: String,
+        default: ''
+    },
     role: {
         type: String,
         enum: ['user', 'admin'],
@@ -37,8 +41,8 @@ const userSchema = new mongoose.Schema({
     }],
     profilepic: {
         type: Buffer,
-        required: true // This is where the actual binary data goes
+        default: null
     },
 
-})
+}, { timestamps: true })
 export default mongoose.models.user || mongoose.model('user', userSchema)
