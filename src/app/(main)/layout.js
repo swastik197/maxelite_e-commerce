@@ -1,11 +1,11 @@
-import Navbar from "@/components/Navbar";
+import Bar1 from "@/components/Bar1";
 import Offers from "@/components/offers";
 
 export default function MainLayout({ children }) {
   return (
     <>
       <Offers />
-      <Navbar />
+      <Bar1/>
       {children}
     </>
   );

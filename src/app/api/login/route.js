@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
     try {
-        await connectDB('mongodb://localhost:27017/rbac')
+        await connectDB(process.env.MONGO_URI)
         const { email, password } = await request.json()
         
         const USER = await user.findOne({ email, password })
@@ -41,6 +41,15 @@ export async function POST(request) {
         }
     } catch (err) {
         console.log('error occurred while login ', err)
+        
+        // Return 503 if database is unavailable
+        if (err.message && (err.message.includes('MONGO_URI') || err.message.includes('connect'))) {
+            return NextResponse.json(
+                { error: 'Database is unavailable. Please try again later.' },
+                { status: 503 }
+            )
+        }
+        
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

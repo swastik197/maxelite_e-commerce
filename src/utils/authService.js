@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
 dotenv.config()
-const key = process.env.key
+const key = process.env.KEY || process.env.key
 function setUser(newuser) {
     return jwt.sign({
         id: newuser.id,

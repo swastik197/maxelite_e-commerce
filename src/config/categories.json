@@ -1,0 +1,44 @@
+[
+  {
+    "id": "cat_1",
+    "name": "Living Room",
+    "slug": "living-room",
+    "description": "Comfortable furniture for your main gathering space.",
+    "image":"/Gemini_Generated_Image_a3z4koa3z4koa3z4.png"
+  },
+  {
+    "id": "cat_2",
+    "name": "Bedroom",
+    "slug": "bedroom",
+    "description": "Cozy essentials for a restful sleep.",
+    "image":"/Gemini_Generated_Image_qolzarqolzarqolz.png"
+  },
+  {
+    "id": "cat_3",
+    "name": "Kitchen & Dining",
+    "slug": "kitchen-dining",
+    "description": "Functional and stylish dining sets.",
+    "image":"/Gemini_Generated_Image_2v6lks2v6lks2v6l.png"
+  },
+  {
+    "id": "cat_4",
+    "name": "Lighting",
+    "slug": "lighting",
+    "description": "Brighten up your home with modern fixtures.",
+    "image":"/Gemini_Generated_Image_uwou9nuwou9nuwou.png"
+  },
+  {
+    "id": "cat_5",
+    "name": "Decor",
+    "slug": "decor",
+    "description": "Accents to add personality to any room.",
+    "image":"/Gemini_Generated_Image_uwou9nuwou9nuwou.png"
+  },
+  {
+    "id": "cat_6",
+    "name": "Office",
+    "slug": "office",
+    "description": "Productivity boosters for your workspace.",
+    "image":"/Gemini_Generated_Image_a3z4koa3z4koa3z4.png"
+  }
+]
