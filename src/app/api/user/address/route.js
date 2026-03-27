@@ -4,36 +4,59 @@ import User from "@/models/userModel";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+// Helper to authenticate and return user doc
+async function getAuthenticatedUser() {
+    const cookieStore = await cookies();
+    const tokenCookie = cookieStore.get("token");
+    if (!tokenCookie) return null;
+    const payload = getUser(tokenCookie.value);
+    if (!payload) return null;
+    await connectDB(process.env.MONGO_URI);
+    const userDoc = await User.findById(payload.id);
+    return userDoc || null;
+}
+
+// POST – add a new address
 export async function POST(request) {
     try {
-        const cookieStore = await cookies();
-        const tokenCookie = cookieStore.get("token");
-        if (!tokenCookie) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const payload = getUser(tokenCookie.value);
-        if (!payload) {
+        const userDoc = await getAuthenticatedUser();
+        if (!userDoc) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const { street, city, state, postalCode, country } = await request.json();
 
-        await connectDB(process.env.MONGO_URI);
+        // Always push a new address entry
+        userDoc.address.push({ street, city, state, postalCode, country });
+        await userDoc.save();
 
-        const userDoc = await User.findById(payload.id);
+        return NextResponse.json({
+            message: "Address added successfully",
+            address: userDoc.address
+        });
+    } catch (err) {
+        console.log("Error adding address:", err);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
+// PUT – update an existing address by index (?index=0)
+export async function PUT(request) {
+    try {
+        const userDoc = await getAuthenticatedUser();
         if (!userDoc) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Update first address or push a new one
-        const addressData = { street, city, state, postalCode, country };
-        if (userDoc.address && userDoc.address.length > 0) {
-            userDoc.address[0] = { ...userDoc.address[0].toObject(), ...addressData };
-        } else {
-            userDoc.address.push(addressData);
+        const { searchParams } = new URL(request.url);
+        const index = parseInt(searchParams.get("index"));
+        const { street, city, state, postalCode, country } = await request.json();
+
+        if (isNaN(index) || index < 0 || index >= userDoc.address.length) {
+            return NextResponse.json({ error: "Invalid address index" }, { status: 400 });
         }
 
+        userDoc.address[index] = { street, city, state, postalCode, country };
         await userDoc.save();
 
         return NextResponse.json({
@@ -45,3 +68,34 @@ export async function POST(request) {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
+
+// DELETE – remove an address by index (?index=0)
+export async function DELETE(request) {
+    try {
+        const userDoc = await getAuthenticatedUser();
+        if (!userDoc) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const index = parseInt(searchParams.get("index"));
+
+        if (isNaN(index) || index < 0 || index >= userDoc.address.length) {
+            return NextResponse.json({ error: "Invalid address index" }, { status: 400 });
+        }
+
+        userDoc.address.splice(index, 1);
+        await userDoc.save();
+
+        return NextResponse.json({
+            message: "Address deleted successfully",
+            address: userDoc.address
+        });
+    } catch (err) {
+        console.log("Error deleting address:", err);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
+
+

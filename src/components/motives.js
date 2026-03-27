@@ -27,7 +27,7 @@ const Motives = () => {
   ]
 
   return (
-    <div ref={sectionRef} className='w-full mb-0.5 grid grid-cols-2 md:grid-cols-4 gap-3 px-4 mt-0 bg-[#001D39] py-4'>
+    <div ref={sectionRef} className='w-full mb-0.5 mt-2 grid grid-cols-2 md:grid-cols-4 gap-3 px-4 mt-0 bg-[#001D39] py-4'>
       {cards.map((card, i) => (
         <div
           key={i}

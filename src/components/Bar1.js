@@ -39,8 +39,8 @@ const Navbar = () => {
   }
 
   const Profiles = [
-    { name: 'My Account', href: `${user?.id ? `/user/${user.id}` : '#'}` },
-    { name: 'Orders', href:     `${user?.id ? `/user/${user.id}` : '#'}` },
+    { name: 'My Account', href: `${user?.id ? `/user_profile/${user.id}` : '#'}` },
+    { name: 'Orders', href:     `${user?.id ? `/user_profile/${user.id}` : '#'}` },
     { name: 'Wishlist', href:   `${user?.id ? `/wishlist/${user.id}` : '#'}` },
   ]
 
@@ -398,7 +398,7 @@ const Navbar = () => {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className='mx-4 text-white hover:text-purple-300 transition-colors focus:outline-none'
           >
-            {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+            {mobileMenuOpen ? <CloseIcon fontSize="large" /> : <MenuIcon fontSize="large" />}
           </button>
 
           {mobileMenuOpen && (

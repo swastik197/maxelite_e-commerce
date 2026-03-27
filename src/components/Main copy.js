@@ -14,8 +14,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HistoryIcon from '@mui/icons-material/History';
 import { useAuth } from '@/context/AuthContext';
 import categoriesData from '@/config/categories.json';
-import productsData from '@/config/products.json';
-
+// products now fetched from database via /api/product/search
+import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 const InteriorCard = () => {
     const cardColor = 'bg-[#0f3c4c]';
     const cardColorHex = '#001e3a';
@@ -27,6 +27,8 @@ const InteriorCard = () => {
     const [searchQuery, setSearchQuery] = useState('')
     const [searchFocused, setSearchFocused] = useState(false)
     const [suggestions, setSuggestions] = useState([])
+    const [searchLoading, setSearchLoading] = useState(false)
+    const [searchError, setSearchError] = useState(false)
     const [recentSearches, setRecentSearches] = useState([])
     const [isLoaded, setIsLoaded] = useState(false)
     const searchRef = useRef(null)
@@ -62,17 +64,32 @@ const InteriorCard = () => {
     }, [])
 
     useEffect(() => {
-        if (searchQuery.trim().length > 0) {
-            const filtered = productsData
-                .filter(product =>
-                    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    product.description.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .slice(0, 6)
-            setSuggestions(filtered)
-        } else {
+        if (searchQuery.trim().length === 0) {
             setSuggestions([])
+            setSearchLoading(false)
+            setSearchError(false)
+            return
         }
+
+        setSearchLoading(true)
+        setSearchError(false)
+
+        const debounceTimer = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/product/search?q=${encodeURIComponent(searchQuery.trim())}`)
+                if (!res.ok) throw new Error('Search failed')
+                const data = await res.json()
+                setSuggestions(data.products || [])
+            } catch (err) {
+                console.error('Search error:', err)
+                setSearchError(true)
+                setSuggestions([])
+            } finally {
+                setSearchLoading(false)
+            }
+        }, 300)
+
+        return () => clearTimeout(debounceTimer)
     }, [searchQuery])
 
     const handleSearch = (e) => {
@@ -90,7 +107,11 @@ const InteriorCard = () => {
         const newRecent = [product.name, ...recentSearches.filter(s => s !== product.name)].slice(0, 5)
         setRecentSearches(newRecent)
         localStorage.setItem('recentSearches', JSON.stringify(newRecent))
-        router.push(`/product/${product.slug}`)
+        if (product.slug) {
+            router.push(`/product/${product.slug}`)
+        } else {
+            router.push(`/results?q=${encodeURIComponent(product.name)}`)
+        }
         setSearchQuery('')
         setSearchFocused(false)
     }
@@ -116,7 +137,7 @@ const InteriorCard = () => {
     const trendingSearches = ['Modern Sofa', 'Oak Furniture', 'Bedroom Decor', 'Office Chair']
 
     return (
-        <div className={`min-h-96 md:min-h-screen ${bgColor} border-white flex items-center justify-center pb-6 lg:pb-0.5`}>
+        <div className={`min-h-96 md:min-h-screen ${bgColor} overflow-hidden border-white flex items-center justify-center pb-6 lg:pb-0.5`}>
             <div className={`relative w-full max-w-screen h-full sm:h-screen ${cardColor} rounded-[0px] rounded-tl-none flex overflow-visible`}
                 style={{
                     backgroundImage: "url('/main.png')",
@@ -138,6 +159,7 @@ const InteriorCard = () => {
                 </div>
 
                 <div className="  w-16 h-16 pointer-events-none overflow-hidden">
+
                 </div>
 
                 {/* Bottom cutouts */}
@@ -152,6 +174,35 @@ const InteriorCard = () => {
                     <div className="hidden sm:block w-full h-full bg-transparent rounded-bl-[20px] absolute top-0 left-0" style={{ boxShadow: `-20px 20px 0 0 ${bgColorHex}` }} />
                     <div className="hidden md:block w-full h-full bg-transparent rounded-bl-[25px] absolute top-0 left-0" style={{ boxShadow: `-25px 25px 0 0 ${bgColorHex}` }} />
                 </div>
+                <div className='w-[100px] h-[100px] absolute hidden lg:flex m-12 bottom-0 right-0 bg-white rounded-full items-center justify-center shadow-2xl cursor-pointer hover:scale-105 transition-transform duration-300 group'>
+                    <svg viewBox="0 0 100 100" className="absolute w-[140px] h-[140px] animate-[spin_10s_linear_infinite] overflow-visible pointer-events-none">
+                        <defs>
+                            <path id="circlePath" d="M 50, 50 m -40, 0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0" />
+                        </defs>
+                        <text>
+                            <textPath href="#circlePath" startOffset="0%" className="text-[10px] font-bold fill-white tracking-[0.27em] uppercase">
+                                Explore Now • Explore Now •
+                            </textPath>
+                        </text>
+                    </svg>
+                    <ArrowOutwardIcon sx={{ fontSize: 44 }} className='text-[#0f3c4c] z-10 group-hover:scale-110 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300' />
+                </div>
+
+                <div className='w-[80px] h-[80px] absolute flex md:hidden right-6 -bottom-6 z-[80] bg-black rounded-full items-center justify-center shadow-2xl cursor-pointer hover:scale-105 transition-transform duration-300 group'>
+                    <svg viewBox="0 0 100 100" className="absolute w-[140px] h-[140px] animate-[spin_10s_linear_infinite] overflow-visible pointer-events-none">
+                        <defs>
+                            <path id="circlePath" d="M 50, 50 m -40, 0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0" />
+                        </defs>
+                        <text>
+                            <textPath href="#circlePath" startOffset="0%" className="text-[8px] z-[0px] font-bold fill-white tracking-[0.2em] uppercase">
+                                Explore Now • Explore Now •
+                            </textPath>
+                        </text>
+                    </svg>
+                    <ArrowOutwardIcon sx={{ fontSize: 44 }} className='text-white z-10 group-hover:scale-110 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300' />
+                </div>
+
+
 
                 {/* ============================== CARD CONTENT ============================== */}
                 <div className="w-full me-10 sm:me-0 gap-8 h-full relative z-[2] flex flex-col items-center justify-center p-1 sm:p-12 text-center">
@@ -160,7 +211,7 @@ const InteriorCard = () => {
                     <form
                         ref={searchRef}
                         onSubmit={handleSearch}
-                        className={`flex rounded-3xl mt-4 p-2 bg-[#49769F] sm:hidden items-center w-full relative transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+                        className={`flex rounded-3xl mt-24 p-2 bg-[#49769F] sm:hidden items-center w-full relative z-50 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
                     >
                         <input
                             className='px-2 text-white w-full focus:outline-none placeholder-purple-200'
@@ -174,29 +225,40 @@ const InteriorCard = () => {
                         </button>
 
                         {searchFocused && (
-                            <div className='absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-[70vh] overflow-y-auto animate-[fadeInDown_0.25s_ease-out]'>
-                                {suggestions.length > 0 && (
+                            <div className='absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-[70vh] overflow-y-auto z-[100] animate-[fadeInDown_0.25s_ease-out]'>
+                                {searchLoading && (
+                                    <div className='p-4 flex items-center justify-center gap-2 text-gray-500'>
+                                        <div className='w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin' />
+                                        <span className='text-sm'>Searching...</span>
+                                    </div>
+                                )}
+                                {searchError && (
+                                    <div className='p-4 text-center text-red-500 text-sm'>Something went wrong. Try again.</div>
+                                )}
+                                {!searchLoading && !searchError && suggestions.length > 0 && (
                                     <div className='p-3'>
                                         <p className='text-xs font-semibold text-gray-500 uppercase mb-2 px-2'>Products</p>
                                         {suggestions.map((product) => (
-                                            <div key={product.id} onClick={() => handleSuggestionClick(product)}
+                                            <div key={product._id || product.id} onClick={() => handleSuggestionClick(product)}
                                                 className='flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors'>
                                                 <img src={product.image} alt={product.name} className='w-12 h-12 object-cover rounded-lg bg-gray-100' />
                                                 <div className='flex-1 min-w-0'>
                                                     <p className='text-gray-800 font-medium truncate'>{product.name}</p>
                                                     <p className='text-purple-600 font-semibold text-sm'>${product.price}</p>
                                                 </div>
-                                                <div className='flex items-center gap-1 text-yellow-500'>
-                                                    <span className='text-sm'>★</span>
-                                                    <span className='text-gray-600 text-sm'>{product.rating}</span>
-                                                </div>
+                                                {product.rating && (
+                                                    <div className='flex items-center gap-1 text-yellow-500'>
+                                                        <span className='text-sm'>★</span>
+                                                        <span className='text-gray-600 text-sm'>{product.rating}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
                                 )}
-                                {searchQuery.trim() && suggestions.length === 0 && (
+                                {searchQuery.trim() && !searchLoading && !searchError && suggestions.length === 0 && (
                                     <div className='p-6 text-center text-gray-500'>
-                                        <p>No products found for "{searchQuery}"</p>
+                                        <p>No products found for &quot;{searchQuery}&quot;</p>
                                         <p className='text-sm mt-1'>Try a different search term</p>
                                     </div>
                                 )}
@@ -253,15 +315,15 @@ const InteriorCard = () => {
                     </form>
 
                     {/* Text Content with staggered reveal */}
-                    <div className="mb-8 z-10 relative">
+                    <div className="mb-8 z-1 relative">
                         <h1 className={`text-5xl sm:text-6xl md:text-8xl text-white font-light mb-2 transition-all duration-1000 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                             Discover Your Perfect
                         </h1>
                         <h1 className={`text-5xl sm:text-6xl md:text-8xl text-white font-medium transition-all duration-1000 ease-out delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
                             Space
                         </h1>
-                        {/* Animated underline */}
-                        
+
+
                     </div>
 
                     <div className="relative w-full h-64 md:h-80 rounded-3xl overflow-hidden shadow-inner">
