@@ -347,7 +347,7 @@ const UserProfileContent = () => {
             {activeSection === 'overview' && (
               <div className="space-y-6 animate-[fadeInUp_0.3s_ease-out]">
                 {/* Quick Stats */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
                     { icon: <ShoppingBagIcon className="w-6 h-6" />, value: userOrders.length, label: 'Total Orders', color: 'purple', bg: 'from-purple-50 to-purple-100/50', iconBg: 'bg-purple-100', iconText: 'text-purple-600' },
                     { icon: <FavoriteIcon className="w-6 h-6" />, value: wishlistItems.length, label: 'Wishlist', color: 'rose', bg: 'from-rose-50 to-pink-100/50', iconBg: 'bg-rose-100', iconText: 'text-rose-500' },
@@ -363,7 +363,7 @@ const UserProfileContent = () => {
                       <p className="text-gray-400 text-xs mt-1 font-medium">{stat.label}</p>
                     </div>
                   ))}
-                </div>
+                </div>*/}
 
                 {/* Profile Info */}
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100/80 p-6 hover:shadow-md transition-all duration-300 animate-[fadeInUp_0.4s_ease-out_0.3s_both]">

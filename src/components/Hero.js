@@ -28,7 +28,9 @@ function useScrollReveal(threshold = 0.15) {
 }
 
 const Hero = () => {
-  const scrollRef = useRef(null)
+  const trendingScrollRef = useRef(null)
+  const featuredScrollRef = useRef(null)
+  const featured2ScrollRef = useRef(null)
   const { openAuthModal } = useAuth()
 
   const featuredProducts = productsData.slice(0, 8)
@@ -37,31 +39,33 @@ const Hero = () => {
   // Scroll reveal refs for each section
   const [bannerRef, bannerVisible] = useScrollReveal(0.1)
   const [promoRef, promoVisible] = useScrollReveal(0.2)
-  const [carouselRef, carouselVisible] = useScrollReveal(0.1)
+  const [trendingCarouselRef, trendingVisible] = useScrollReveal(0.1)
+  const [featuredCarouselRef, featuredVisible] = useScrollReveal(0.1)
+  const [featured2CarouselRef, featured2Visible] = useScrollReveal(0.1)
   const [categoryRef, categoryVisible] = useScrollReveal(0.15)
   const [ctaRef, ctaVisible] = useScrollReveal(0.2)
 
-  const scrollLeft = () => {
-    if (scrollRef.current) scrollRef.current.scrollBy({ left: -300, behavior: 'smooth' })
+  const scrollLeft = (ref) => {
+    if (ref?.current) ref.current.scrollBy({ left: -300, behavior: 'smooth' })
   }
 
-  const scrollRight = () => {
-    if (scrollRef.current) scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' })
+  const scrollRight = (ref) => {
+    if (ref?.current) ref.current.scrollBy({ left: 300, behavior: 'smooth' })
   }
 
   return (
     <>
     {/* bg-[#001D39] */}
-      <section ref={carouselRef} className='my-0.5 relative py-4  overflow-hidden'>
-        <div className='mx-1 bg-[#4E8EA2] rounded-2xl py-2 pb-4 px-4'>
-          <h2 className={`text-2xl font-bold text-white mx-10 mt-4 mb-4 transition-all duration-700 `}>
+      <section ref={trendingCarouselRef} className='my-0.5 relative py-4  overflow-hidden'>
+        <div className='mx-1 bg-[#4E8EA2] rounded-lg py-2 pb-14 px-4'>
+          <h2 className={`text-2xl font-bold text-white md:mx-10 mt-4 mb-4 transition-all duration-700 `}>
             Trending Products
             {/* Animated underline */}
-            <div className={`h-1 bg-gradient-to-r from-purple-500 via-blue-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-300 ${carouselVisible ? 'w-40 opacity-100' : 'w-0 opacity-0'}`} />
+            <div className={`h-1 bg-gradient-to-r from-purple-500 via-blue-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-300 ${trendingVisible ? 'w-40 opacity-100' : 'w-0 opacity-0'}`} />
           </h2>
 
           <button
-            onClick={scrollLeft}
+            onClick={() => scrollLeft(trendingScrollRef)}
             className='absolute left-0 top-1/2 mx-4 -translate-y-1/2 z-30 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 active:scale-95'
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -70,7 +74,7 @@ const Hero = () => {
           </button>
 
           <div
-            ref={scrollRef}
+            ref={trendingScrollRef}
             className='flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth px-10'
           >
             {featuredProducts.map((product, i) => (
@@ -126,7 +130,7 @@ const Hero = () => {
           </div>
 
           <button
-            onClick={scrollRight}
+            onClick={() => scrollRight(trendingScrollRef)}
             className='absolute right-0 top-1/2 mx-4 -translate-y-1/2 z-30 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 active:scale-95'
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,12 +141,12 @@ const Hero = () => {
       </section>
       {/* ═══ Hero Banner Section ══════════════════════════════════ */}
       {/*bg-[#001D39]*/}
-      <section ref={bannerRef} className='lg:h-screen  p-3 py-6 sm:p-4 lg:p-6 lg:py-10 flex flex-col gap-3 sm:gap-4'>
+      <section ref={bannerRef} className='lg:h-screen  p-3 py-4 sm:p-4 lg:p-6 lg:py-10 flex flex-col gap-3 sm:gap-4'>
         <div className='w-full flex-1 grid sm:grid-cols-3 grid-cols-1 gap-3 sm:gap-4 min-h-0'>
           {/* Main Banner */}
           <div
             style={{ backgroundImage: "url('/Gemini_Generated_Image_m6og39m6og39m6og.png')" }}
-            className={`col-span-1 sm:col-span-2 bg-cover bg-center rounded-2xl flex items-center justify-center relative overflow-hidden min-h-[200px] sm:min-h-0 transition-all duration-1000 ease-out ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-10 scale-[0.97]'
+            className={`col-span-1 sm:col-span-2 bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-[200px] sm:min-h-0 transition-all duration-1000 ease-out ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-10 scale-[0.97]'
               }`}
           >
             <div className='absolute inset-0 bg-black/40'></div>
@@ -170,7 +174,7 @@ const Hero = () => {
           {/* Flash Sale Banner */}
           <div
             style={{ backgroundImage: "url('/Gemini_Generated_Image_hx8i9jhx8i9jhx8i.png')" }}
-            className={`bg-cover bg-center rounded-2xl flex items-center justify-center relative overflow-hidden min-h-[160px] sm:min-h-0 transition-all duration-1000 ease-out delay-300 ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-[0.97]'
+            className={`bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-[160px] sm:min-h-0 transition-all duration-1000 ease-out delay-300 ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-[0.97]'
               }`}
           >
             <div className='absolute inset-0 bg-black/40'></div>
@@ -187,7 +191,7 @@ const Hero = () => {
 
         {/* Promo strips */}
         <div ref={promoRef} className='hidden md:grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
-          <div className={`bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 overflow-hidden group hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-500 cursor-pointer ${promoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          <div className={`bg-gradient-to-r from-amber-400 to-orange-400 rounded-lg flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 overflow-hidden group hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-500 cursor-pointer ${promoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`} style={{ transitionDuration: '700ms' }}>
             <div className='text-white'>
               <p className='text-amber-100 text-xs sm:text-sm'>Free Shipping</p>
@@ -196,7 +200,7 @@ const Hero = () => {
             </div>
             <div className='text-4xl sm:text-6xl group-hover:scale-125 group-hover:rotate-12 transition-all duration-500'>🚚</div>
           </div>
-          <div className={`bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-500 cursor-pointer ${promoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          <div className={`bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-500 cursor-pointer ${promoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`} style={{ transitionDuration: '700ms', transitionDelay: '150ms' }}>
             <div className='text-white'>
               <p className='text-emerald-100 text-xs sm:text-sm'>Member Exclusive</p>
@@ -209,16 +213,17 @@ const Hero = () => {
       </section>
 
       {/* ═══ Featured Products Carousel ═══════════════════════════ */}
-      <section ref={carouselRef} className='my-0.5 relative py-4 overflow-hidden'>
-        <div className='mx-1 bg-[#49769F] rounded-2xl py-2 pb-4 px-4'>
-          <h2 className={`text-2xl font-bold text-white mx-3 md:mx-10 mt-2 mb-4 transition-all duration-700 ${carouselVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
+
+      <section ref={featuredCarouselRef} className='my-0.5 relative py-4 overflow-hidden'>
+        <div className='mx-1 bg-[#49769F] rounded-lg py-4 pb-14 px-4'>
+          <h2 className={`text-2xl font-bold text-white mx-3 md:mx-10 mt-2 mb-4 transition-all duration-700 ${featuredVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
             Featured Products
             {/* Animated underline */}
-            <div className={`h-1 bg-gradient-to-r from-purple-500 via-blue-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-300 ${carouselVisible ? 'w-40 opacity-100' : 'w-0 opacity-0'}`} />
+            <div className={`h-1 bg-gradient-to-r from-purple-500 via-blue-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-300 ${featuredVisible ? 'w-40 opacity-100' : 'w-0 opacity-0'}`} />
           </h2>
 
           <button
-            onClick={scrollLeft}
+            onClick={() => scrollLeft(featuredScrollRef)}
             className='absolute left-0 top-1/2 mx-4 -translate-y-1/2 z-30 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 active:scale-95'
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -227,7 +232,7 @@ const Hero = () => {
           </button>
 
           <div
-            ref={scrollRef}
+            ref={featuredScrollRef}
             className='flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth px-10'
           >
             {featuredProducts.map((product, i) => (
@@ -235,7 +240,7 @@ const Hero = () => {
                 href={`/product/${product.slug}`}
                 key={product.id}
                 style={{ transitionDelay: `${i * 80}ms` }}
-                className={`md:min-w-[260px] min-w-[200px] z-20 mt-4 bg-white rounded-md shadow-md overflow-hidden group hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-3 transition-all duration-500 ${carouselVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-95'
+                className={`md:min-w-[260px] min-w-[200px] z-20 mt-4 bg-white rounded-md shadow-md overflow-hidden group hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-3 transition-all duration-500 ${featuredVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-95'
                   }`}
               >
                 <div className='h-58 md:h-48 lg:h-72 bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden'>
@@ -257,7 +262,7 @@ const Hero = () => {
                     </button>
                   </div>
                   <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/20 to-transparent h-16'></div>
-                  <div className='absolute bottom-2 p-1.5 bg-white rounded-2xl left-2 flex items-center gap-1 mb-2'>
+                  <div className='absolute bottom-2 p-1.5 bg-white rounded-lg left-2 flex items-center gap-1 mb-2'>
                     <div className='flex items-center gap-0.5'>
                       {[...Array(5)].map((_, i) => (
                         <svg key={i} className={`h-3.5 w-3.5 ${i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-200'} transition-colors duration-300`} fill="currentColor" viewBox="0 0 20 20">
@@ -284,7 +289,7 @@ const Hero = () => {
           </div>
 
           <button
-            onClick={scrollRight}
+            onClick={() => scrollRight(featuredScrollRef)}
             className='absolute right-0 top-1/2 mx-4 -translate-y-1/2 z-30 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 active:scale-95'
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -295,7 +300,7 @@ const Hero = () => {
       </section>
 
       {/* ═══ Category Showcase ═════════════════════════════════════ */}
-      <section ref={categoryRef} className='my-0.5 bg-[#0A4174]  mx-1 rounded-2xl py-8 px-4'>
+      <section ref={categoryRef} className='my-0.5 bg-[#0A4174]  mx-1 rounded-lg py-8 px-4'>
         <h2 className={`text-2xl font-bold text-white mx-2 mb-6 transition-all duration-700 ${categoryVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
           Shop by Category
           <div className={`h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-200 ${categoryVisible ? 'w-36 opacity-100' : 'w-0 opacity-0'}`} />
@@ -338,35 +343,67 @@ const Hero = () => {
         </div>
       </section>
 
-      {/* ═══ Membership CTA Banner ════════════════════════════════ */}
+      {/* ═══ Visit Our Store ═══════════════════════════════════════ */}
       <section ref={ctaRef} className='mx-4 my-8'>
-        <div className={`bg-gradient-to-r from-purple-700 via-purple-600 to-pink-500 rounded-xl p-8 md:p-12 text-white text-center relative overflow-hidden transition-all duration-1000 ease-out ${ctaVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-[0.97]'
-          }`}>
+        <div className={`bg-gradient-to-br from-[#0A4174] via-[#0d5298] to-[#1a6bb5] rounded-xl p-8 md:p-12 text-white relative overflow-hidden transition-all duration-1000 ease-out ${ctaVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-[0.97]'}`}>
           {/* Decorative animated circles */}
           <div className='absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 animate-[pulse_4s_ease-in-out_infinite]' />
           <div className='absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3 animate-[pulse_5s_ease-in-out_infinite_1s]' />
-          <div className='absolute top-1/2 left-1/4 w-24 h-24 bg-white/5 rounded-full animate-[pulse_3s_ease-in-out_infinite_0.5s]' />
 
           <div className='relative z-10'>
-            <h2 className={`text-3xl md:text-4xl font-bold mb-4 transition-all duration-700 delay-200 ${ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              Join Our Membership Program
-            </h2>
-            <p className={`text-purple-200 mb-6 max-w-2xl mx-auto transition-all duration-700 delay-400 ${ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              Get exclusive access to new collections, special discounts, and personalized recommendations.
-            </p>
-            <div className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-700 delay-[600ms] ${ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              <button
-                onClick={openAuthModal}
-                className='bg-white text-purple-700 px-8 py-3 rounded-lg font-semibold hover:bg-purple-100 hover:shadow-xl hover:shadow-white/20 hover:-translate-y-1 transition-all duration-300 active:scale-95'
-              >
-                Sign Up Free
-              </button>
-              <Link
-                href='/category?slug=decor'
-                className='border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/15 hover:-translate-y-1 transition-all duration-300 active:scale-95'
-              >
-                Browse Products
-              </Link>
+            {/* Heading */}
+            <div className={`text-center mb-8 transition-all duration-700 delay-100 ${ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+              <div className='flex items-center justify-center gap-3 mb-2'>
+                <svg className='w-8 h-8 text-blue-300' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' />
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 11a3 3 0 11-6 0 3 3 0 016 0z' />
+                </svg>
+                <h2 className='text-3xl md:text-4xl font-bold'>Visit Our Store</h2>
+              </div>
+              <div className='h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-transparent rounded-full w-48 mx-auto mt-3' />
+            </div>
+
+            {/* Address Cards */}
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-8'>
+              {/* Branch Office */}
+              <div className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:-translate-y-1 transition-all duration-300 ${ctaVisible ? 'opacity-100 translate-y-0 delay-300' : 'opacity-0 translate-y-8'}`}>
+                <div className='flex items-center gap-2 mb-3'>
+                  <span className='bg-blue-400/30 text-blue-200 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide'>Branch Office</span>
+                </div>
+                <p className='text-white font-medium leading-relaxed'>
+                  Giri Market Complex, Arad Bazar,<br />
+                  Near Nuniajodi Bridge,<br />
+                  Balasore, Odisha<br />
+                  <span className='text-blue-200 font-semibold'>Pin - 756001</span>
+                </p>
+              </div>
+
+              {/* Head Office */}
+              <div className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:-translate-y-1 transition-all duration-300 ${ctaVisible ? 'opacity-100 translate-y-0 delay-[450ms]' : 'opacity-0 translate-y-8'}`}>
+                <div className='flex items-center gap-2 mb-3'>
+                  <span className='bg-purple-400/30 text-purple-200 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide'>Address</span>
+                </div>
+                <p className='text-white font-medium leading-relaxed'>
+                  Plot No. 270 & 278, 1st Floor,<br />
+                  Rasulgarh Square,<br />
+                  Bhubaneswar, Odisha<br />
+                  <span className='text-purple-200 font-semibold'>Pin - 751010</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700 delay-[600ms] ${ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+              <div className='flex items-center gap-2 bg-white/10 border border-white/20 rounded-lg px-5 py-3 hover:bg-white/15 transition-all duration-300'>
+                <svg className='w-5 h-5 text-green-300 flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z' />
+                </svg>
+                <div>
+                  <p className='text-blue-200 text-xs mb-0.5'>Contact (Office)</p>
+                  <p className='text-white font-semibold text-sm'>+91 96740 34762</p>
+                  <p className='text-white font-semibold text-sm'>+91 77498 25303</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
