@@ -146,7 +146,7 @@ const Hero = () => {
           {/* Main Banner */}
           <div
             style={{ backgroundImage: "url('/Gemini_Generated_Image_m6og39m6og39m6og.png')" }}
-            className={`col-span-1 sm:col-span-2 bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-[200px] sm:min-h-0 transition-all duration-1000 ease-out ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-10 scale-[0.97]'
+            className={`col-span-1 sm:col-span-2 bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-[200px] sm:min-h-0 transition-all duration-1000 ease-out ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x- scale-[0.97]'
               }`}
           >
             <div className='absolute inset-0 bg-black/40'></div>
@@ -174,7 +174,7 @@ const Hero = () => {
           {/* Flash Sale Banner */}
           <div
             style={{ backgroundImage: "url('/Gemini_Generated_Image_hx8i9jhx8i9jhx8i.png')" }}
-            className={`bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-[160px] sm:min-h-0 transition-all duration-1000 ease-out delay-300 ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-[0.97]'
+            className={`bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-[160px] sm:min-h-0 transition-all duration-1000 ease-out delay-300 ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-0 scale-[0.97]'
               }`}
           >
             <div className='absolute inset-0 bg-black/40'></div>

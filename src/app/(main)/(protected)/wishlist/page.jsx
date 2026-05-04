@@ -1,6 +1,5 @@
 "use client"
 import React, { useState, useEffect } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
@@ -13,32 +12,66 @@ import GridViewIcon from '@mui/icons-material/GridView'
 import ViewListIcon from '@mui/icons-material/ViewList'
 import LocalOfferIcon from '@mui/icons-material/LocalOffer'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'
-
-// Import data from config
-import productsData from '@/config/products.json'
-import categoriesData from '@/config/categories.json'
+const NAV_BG = '#001e3a'
+const ACCENT = '#0f3c4c'
 
 const WishlistContent = () => {
   const [wishlistItems, setWishlistItems] = useState([])
+  const [recommendedProducts, setRecommendedProducts] = useState([])
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [sortBy, setSortBy] = useState('dateAdded')
   const [notification, setNotification] = useState(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+  
+    useEffect(() => {
+      const timer = setTimeout(() => setIsLoaded(true), 100)
+      return () => clearTimeout(timer)
+    }, [])
+  
+  
+
+  const fetchWishlistItems = async () => {
+    const res = await fetch('/api/user/wishlist', { cache: 'no-store' })
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to load wishlist')
+    }
+
+    setWishlistItems(Array.isArray(data.wishlist) ? data.wishlist : [])
+  }
+
+  const fetchRecommendedProducts = async () => {
+    const res = await fetch('/api/product/search/result?q=a&limit=6&sort=rating', { cache: 'no-store' })
+    const data = await res.json()
+
+    if (!res.ok) {
+      return
+    }
+
+    const products = Array.isArray(data.products) ? data.products : []
+    setRecommendedProducts(products.map((product) => ({
+      id: String(product._id || product.id),
+      slug: product.slug || '',
+      name: product.name || '',
+      image: product.image || '',
+      price: Number(product.salePrice || product.price || 0),
+    })))
+  }
 
   useEffect(() => {
-    // Simulate wishlist items (random products)
-    const shuffled = [...productsData].sort(() => 0.5 - Math.random())
-    const itemsWithWishlistData = shuffled.slice(0, 8).map(product => ({
-      ...product,
-      addedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-    }))
-    setWishlistItems(itemsWithWishlistData)
-  }, [])
+    const load = async () => {
+      try {
+        await fetchWishlistItems()
+      } catch {
+        showNotification('Unable to load wishlist from database', 'error')
+      }
 
-  const getCategoryName = (categoryId) => {
-    const category = categoriesData.find(cat => cat.id === categoryId)
-    return category?.name || 'Unknown'
-  }
+      fetchRecommendedProducts()
+    }
+
+    load()
+  }, [])
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type })
@@ -46,24 +79,76 @@ const WishlistContent = () => {
   }
 
   const removeFromWishlist = (productId) => {
+    const previousItems = wishlistItems
     setWishlistItems(prev => prev.filter(item => item.id !== productId))
-    showNotification('Item removed from wishlist')
+
+    fetch('/api/user/wishlist', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId })
+    })
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to remove wishlist item')
+        setWishlistItems(Array.isArray(data.wishlist) ? data.wishlist : [])
+        showNotification('Item removed from wishlist')
+      })
+      .catch(() => {
+        setWishlistItems(previousItems)
+        showNotification('Unable to update wishlist', 'error')
+      })
   }
 
   const addToCart = (product) => {
-    // Here you would typically add to cart context/state
-    showNotification(`${product.name} added to cart!`)
+    fetch('/api/user/cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: product.id, quantity: 1 })
+    })
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to add to cart')
+        showNotification(`${product.name} added to cart!`)
+      })
+      .catch(() => showNotification('Unable to add to cart', 'error'))
   }
 
   const addAllToCart = () => {
-    // Here you would add all items to cart
-    showNotification(`${wishlistItems.length} items added to cart!`)
+    if (wishlistItems.length === 0) return
+
+    const ids = wishlistItems.map((item) => item.id)
+    fetch('/api/user/cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds: ids, quantity: 1 })
+    })
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to add all to cart')
+        showNotification(`${wishlistItems.length} items added to cart!`)
+      })
+      .catch(() => showNotification('Unable to add all items to cart', 'error'))
   }
 
   const clearWishlist = () => {
     if (confirm('Are you sure you want to clear your entire wishlist?')) {
+      const previousItems = wishlistItems
       setWishlistItems([])
-      showNotification('Wishlist cleared')
+
+      fetch('/api/user/wishlist', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+        .then(async (res) => {
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || 'Failed to clear wishlist')
+          setWishlistItems(Array.isArray(data.wishlist) ? data.wishlist : [])
+          showNotification('Wishlist cleared')
+        })
+        .catch(() => {
+          setWishlistItems(previousItems)
+          showNotification('Unable to clear wishlist', 'error')
+        })
     }
   }
 
@@ -96,36 +181,37 @@ const WishlistContent = () => {
       )}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <FavoriteIcon className="w-8 h-8" />
-            <div>
-              <h1 className="text-3xl font-bold">My Wishlist</h1>
-              <p className="text-purple-200 mt-1">{wishlistItems.length} items saved</p>
-            </div>
+      <div
+        className="relative w-full overflow-hidden"
+        style={{ background: `linear-gradient(135deg, ${NAV_BG} 0%, ${ACCENT} 100%)`, minHeight: '100px' }}
+      >
+        {/* Floating particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[20%] left-[10%] w-2 h-2 bg-white/20 rounded-full animate-[floatParticle_8s_ease-in-out_infinite]" />
+          <div className="absolute top-[60%] left-[80%] w-3 h-3 bg-blue-300/15 rounded-full animate-[floatParticle_10s_ease-in-out_infinite_1s]" />
+          <div className="absolute top-[40%] left-[50%] w-1.5 h-1.5 bg-white/20 rounded-full animate-[floatParticle_6s_ease-in-out_infinite_2s]" />
+          <div className="absolute top-[75%] left-[30%] w-2.5 h-2.5 bg-white/10 rounded-full animate-[floatParticle_12s_ease-in-out_infinite_0.5s]" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 relative z-10">
+          <div className={`transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+            <p className="text-white/60 text-sm font-medium tracking-widest uppercase mb-2">Your wishlist</p>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-white mb-1">Shopping</h1>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-medium text-white">Wish</h1>
+            <p className="text-white/50 mt-2 text-sm">{wishlistItems.length} item{wishlistItems.length !== 1 ? 's' : ''} saved</p>
           </div>
+        </div>
+
+        {/* Bottom wave cutout */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+            <path d="M0 60 L0 30 Q360 0 720 30 Q1080 60 1440 30 L1440 60 Z" fill="white" />
+          </svg>
         </div>
       </div>
 
       {/* Promotional Banner */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl p-6 text-white flex flex-col md:flex-row items-center justify-between">
-          <div className="flex items-center gap-4">
-            <LocalOfferIcon className="w-12 h-12" />
-            <div>
-              <h3 className="text-xl font-bold">Don't miss out!</h3>
-              <p className="text-pink-100">Some items in your wishlist are on sale. Grab them before they're gone!</p>
-            </div>
-          </div>
-          <button
-            onClick={addAllToCart}
-            className="mt-4 md:mt-0 bg-white text-pink-600 px-6 py-3 rounded-lg font-semibold hover:bg-pink-50 transition-colors"
-          >
-            Add All to Cart
-          </button>
-        </div>
-      </div>
+     
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {wishlistItems.length > 0 ? (
@@ -208,7 +294,7 @@ const WishlistContent = () => {
                     
                     <div className="p-4">
                       <p className="text-xs text-purple-600 font-medium mb-1">
-                        {getCategoryName(product.categoryId)}
+                        {product.category || 'Unknown'}
                       </p>
                       <h3 className="font-medium text-gray-800 truncate mb-2">{product.name}</h3>
                       
@@ -264,7 +350,7 @@ const WishlistContent = () => {
               <div className="space-y-4">
                 {sortedItems.map((product) => (
                   <div key={product.id} className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col md:flex-row">
-                    <div className="relative w-full md:w-48 h-48 bg-gray-100 flex-shrink-0">
+                    <div className="relative w-full md:w-48 h-48 bg-gray-100 shrink-0">
                       <img
                         src={product.image}
                         alt={product.name}
@@ -282,7 +368,7 @@ const WishlistContent = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="text-sm text-purple-600 font-medium mb-1">
-                              {getCategoryName(product.categoryId)}
+                              {product.category || 'Unknown'}
                             </p>
                             <h3 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h3>
                             <p className="text-gray-600 text-sm mb-3">{product.description}</p>
@@ -347,7 +433,7 @@ const WishlistContent = () => {
             <div className="mt-12">
               <h2 className="text-2xl font-bold text-gray-800 mb-6">You Might Also Like</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {productsData.slice(0, 6).map((product) => (
+                {recommendedProducts.map((product) => (
                   <Link href={`/product/${product.slug}`} key={product.id} className="bg-white rounded-lg shadow-sm overflow-hidden group">
                     <div className="aspect-square bg-gray-100">
                       <img

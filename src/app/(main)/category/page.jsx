@@ -1,5 +1,6 @@
 "use client"
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, Suspense, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -17,6 +18,7 @@ import LocalOfferIcon from '@mui/icons-material/LocalOffer'
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 
 // Import data from config
@@ -26,7 +28,7 @@ import categoriesData from '@/config/categories.json'
 const CategoryPageContent = () => {
   const searchParams = useSearchParams()
   const categorySlug = searchParams.get('slug') || 'living-room'
-  
+
   const [category, setCategory] = useState(null)
   const [products, setProducts] = useState([])
   const [filteredProducts, setFilteredProducts] = useState([])
@@ -35,7 +37,10 @@ const CategoryPageContent = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [notification, setNotification] = useState(null)
   const [wishlist, setWishlist] = useState([])
-  
+  const [showSortMenu, setShowSortMenu] = useState(false)
+  const sortBtnRef = useRef(null)
+  const [popoverStyle, setPopoverStyle] = useState({})
+
   // Filter states
   const [priceRange, setPriceRange] = useState([0, 5000])
   const [selectedRatings, setSelectedRatings] = useState([])
@@ -100,8 +105,8 @@ const CategoryPageContent = () => {
   }
 
   const toggleWishlist = (productId) => {
-    setWishlist(prev => 
-      prev.includes(productId) 
+    setWishlist(prev =>
+      prev.includes(productId)
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
     )
@@ -126,7 +131,8 @@ const CategoryPageContent = () => {
     setSelectedRatings([])
     setInStockOnly(false)
   }
-
+  const NAV_BG = '#001e3a'
+  const ACCENT = '#0f3c4c'
   // Promotional banners for category
   const promotionalBanners = [
     {
@@ -142,7 +148,7 @@ const CategoryPageContent = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 bg-green-500 text-white">
+        <div className="fixed bottom-8 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 bg-green-500 text-white">
           <CheckCircleIcon className="w-5 h-5" />
           {notification}
         </div>
@@ -150,10 +156,12 @@ const CategoryPageContent = () => {
 
       {/* Category Hero Banner */}
       <div
-        style={category?.image ? { backgroundImage: `url('${category.image}')` } : undefined}
-        className={`relative text-white bg-cover bg-center ${category?.image ? '' : 'bg-gradient-to-r from-[#0A4174] to-[#001D39]'}`}
+        style={{ background: `linear-gradient(135deg, ${NAV_BG} 0%, ${ACCENT} 100%)`, minHeight: '150px' }}
+        className={`relative w-full overflow-hidden pb-4`}
+
+      // relative text-white bg-cover bg-center ${category?.image ? '' : 'bg-gradient-to-r from-[#0A4174] to-[#001D39]'}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0A4174]/20 to-[#001D39]/85"></div>
+        <div className="absolute inset-0 bg-linear-to-r from-[#0A4174]/20 to-[#001D39]/85"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:py-2">
           <div className="relative py-4 z-10 flex flex-row items-center justify-between">
             <div>
@@ -165,12 +173,12 @@ const CategoryPageContent = () => {
                 <ArrowForwardIosIcon className="w-1 h-1" />
                 <span className="text-white">{category?.name}</span>
               </div>
-              
+
               <h1 className="text-2xl font-bold mb-2">{category?.name}</h1>
               <p className="text-purple-200 text-sm max-w-xl">{category?.description}</p>
-            
+
             </div>
-            
+
             <div className="hidden md:flex mt-2 mb-2 md:mt-0">
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center">
                 <LocalOfferIcon className="w-12 h-12 text-yellow-300 mb-2" />
@@ -180,49 +188,100 @@ const CategoryPageContent = () => {
             </div>
           </div>
         </div>
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+            <path d="M0 60 L0 30 Q360 0 720 30 Q1080 60 1440 30 L1440 60 Z" fill="white" />
+          </svg>
+        </div>
       </div>
 
       {/* Promotional Ad Banner */}
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-gradient-to-r from-pink-500 to-orange-400 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between text-white overflow-hidden relative">
-          <div className="z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <VerifiedIcon className="w-6 h-6" />
-              <span className="font-semibold">Limited Time Offer</span>
-            </div>
-            <h3 className="text-2xl font-bold mb-1">Free Shipping on {category?.name}!</h3>
-            <p className="text-white/80">No minimum order required. Use code: FREE{category?.slug?.toUpperCase()}</p>
+        {/* Compact Sort / Filter toolbar */}
+        <div className="bg-white md:hidden rounded-xl shadow-sm p-3 mb-4 flex items-center justify-between relative">
+          <div className="flex items-center gap-3">
+            <button ref={sortBtnRef} onClick={() => {
+              if (!showSortMenu && sortBtnRef.current) {
+                const rect = sortBtnRef.current.getBoundingClientRect();
+                setPopoverStyle({
+                  position: 'fixed',
+                  top: rect.bottom + window.scrollY + 8,
+                  left: rect.left + window.scrollX,
+                  width: 192
+                })
+              }
+              setShowSortMenu(prev => !prev)
+            }} className="flex items-center gap-2 text-gray-600 hover:text-purple-600 px-2 py-1">
+              <SortIcon className="w-4 h-4" />
+              <span className="text-sm hidden sm:inline">Sort</span>
+            </button>
+            <div className="w-px h-6 bg-gray-100" />
+            <button onClick={() => setShowFilters(prev => !prev)} className="flex items-center gap-2 text-gray-600 hover:text-purple-600 px-2 py-1">
+              <TuneIcon className="w-4 h-4" />
+              <span className="text-sm hidden sm:inline">Filter</span>
+            </button>
           </div>
-          <button className="mt-4 md:mt-0 bg-white text-pink-600 px-6 py-3 rounded-lg font-semibold hover:bg-pink-50 transition-colors z-10">
-            Shop Now
-          </button>
-          <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-600">Showing <strong>{filteredProducts.length}</strong></div>
+            <div className="hidden sm:flex items-center gap-2">
+              <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-100' : ''}`}><GridViewIcon className="w-4 h-4" /></button>
+              <button onClick={() => setViewMode('list')} className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-100' : ''}`}><ViewListIcon className="w-4 h-4" /></button>
+            </div>
+          </div>
+          {showSortMenu && typeof document !== 'undefined' && createPortal(
+            <div style={popoverStyle} className="bg-white rounded-lg shadow-md z-50">
+              <ul className="divide-y">
+                {[
+                  { key: 'featured', label: 'Featured' },
+                  { key: 'newest', label: 'Newest' },
+                  { key: 'priceLow', label: 'Price: Low to High' },
+                  { key: 'priceHigh', label: 'Price: High to Low' },
+                  { key: 'rating', label: 'Highest Rated' }
+                ].map(opt => (
+                  <li key={opt.key}>
+                    <button
+                      onClick={() => { setSortBy(opt.key); setShowSortMenu(false); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${sortBy === opt.key ? 'font-semibold' : ''}`}
+                    >
+                      {opt.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>,
+            document.body
+          )}
         </div>
-      </div>
 
-      {/* Category Quick Links */}
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {categoriesData.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/category?slug=${cat.slug}`}
-              className={`px-4 py-2 rounded-full whitespace-nowrap font-medium transition-colors ${
-                cat.id === category?.id
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-purple-100 border border-gray-200'
-              }`}
-            >
-              {cat.name}
-            </Link>
-          ))}
+        {/* Quick chips / categories (scrollable) */}
+
+
+        {/* Promo card */}
+        <div className="bg-white rounded-xl overflow-hidden mb-6 shadow-sm">
+          <div className="flex flex-col md:flex-row items-center">
+            <div className="w-full relative h-38 md:h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
+              {/* Replace with real image if available */}
+              <img src="/banner-placeholder.png" alt="promo" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+              <div className="md:hidden p-2">
+                <span className="text-xs text-gray-500">AD</span>
+              </div>
+              <div className="flex-1 left-2 absolute bottom-2 p-1">
+                <div className="flex  justify-between">
+                  <span className="text-xs text-gray-400">AD</span>
+                  <button className="p-1 md:hidden rounded-full text-gray-600">❤</button>
+                </div>
+
+                <p className="text-sm text-gray-600 mt-2 mb-2">Explore curated casual sneakers and grab limited time offers from top brands.</p>
+                <button className="inline-flex items-center gap-2 text-purple-600 font-semibold">Shop Collection <ArrowForwardIcon className="w-4 h-4" /></button>
+              </div>
+            </div>
+
+          </div>
         </div>
-      </div>
 
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar - Desktop */}
-          <div className={`lg:w-64 flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+          <div className={`lg:w-64 absolute top-82 z-30 md:z-0 md:static shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-4">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -313,7 +372,7 @@ const CategoryPageContent = () => {
           {/* Products Section */}
           <div className="flex-1">
             {/* Toolbar */}
-            <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="bg-white rounded-xl shadow-sm p-4 mb-6 hidden md:flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
@@ -364,14 +423,14 @@ const CategoryPageContent = () => {
 
             {/* Grid View */}
             {viewMode === 'grid' && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-2">
                 {filteredProducts.map((product) => (
-                  <div key={product.id} className="bg-white rounded-xl shadow-sm overflow-hidden group hover:shadow-lg transition-shadow">
-                    <div className="relative aspect-square bg-gray-100">
+                  <div key={product.id} className="bg-white rounded-sm overflow-hidden group hover:shadow-lg transition-shadow">
+                    <div className="relative min-h-52 bg-gray-100">
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       {/* Badges */}
                       <div className="absolute top-3 left-3 flex flex-col gap-2">
@@ -387,11 +446,10 @@ const CategoryPageContent = () => {
                       {/* Wishlist Button */}
                       <button
                         onClick={() => toggleWishlist(product.id)}
-                        className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-colors ${
-                          wishlist.includes(product.id)
-                            ? 'bg-red-500 text-white'
-                            : 'bg-white text-gray-600 hover:text-red-500'
-                        }`}
+                        className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-colors ${wishlist.includes(product.id)
+                          ? 'bg-red-500 text-white'
+                          : 'bg-white text-gray-600 hover:text-red-500'
+                          }`}
                       >
                         {wishlist.includes(product.id) ? (
                           <FavoriteIcon className="w-5 h-5" />
@@ -399,14 +457,7 @@ const CategoryPageContent = () => {
                           <FavoriteBorderIcon className="w-5 h-5" />
                         )}
                       </button>
-                    </div>
-                    
-                    <div className="p-4">
-                      <Link href={`/product/${product.slug}`}>
-                        <h3 className="font-medium text-gray-800 hover:text-purple-600 truncate">{product.name}</h3>
-                      </Link>
-                      
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex absolute bottom-1 items-center gap-2">
                         <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded text-sm">
                           <StarIcon className="w-4 h-4" />
                           <span className="font-medium">{product.rating}</span>
@@ -415,6 +466,14 @@ const CategoryPageContent = () => {
                           {product.inStock ? 'In Stock' : 'Out of Stock'}
                         </span>
                       </div>
+                    </div>
+
+                    <div className="p-2">
+                      <Link href={`/product/${product.slug}`}>
+                        <h3 className="font-medium text-gray-800 hover:text-purple-600 truncate">{product.name}</h3>
+                      </Link>
+
+
 
                       <div className="flex items-center justify-between mt-3">
                         <div>
@@ -425,18 +484,7 @@ const CategoryPageContent = () => {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => addToCart(product)}
-                        disabled={!product.inStock}
-                        className={`w-full mt-3 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-                          product.inStock
-                            ? 'bg-purple-600 text-white hover:bg-purple-700'
-                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        <ShoppingCartIcon className="w-4 h-4" />
-                        Add to Cart
-                      </button>
+
                     </div>
                   </div>
                 ))}
@@ -448,7 +496,7 @@ const CategoryPageContent = () => {
               <div className="space-y-4">
                 {filteredProducts.map((product) => (
                   <div key={product.id} className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col md:flex-row">
-                    <div className="relative w-full md:w-64 h-64 bg-gray-100 flex-shrink-0">
+                    <div className="relative w-full md:w-64 h-64 bg-gray-100 shrink-0">
                       <img
                         src={product.image}
                         alt={product.name}
@@ -465,7 +513,7 @@ const CategoryPageContent = () => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex-1 p-6 flex flex-col justify-between">
                       <div>
                         <div className="flex items-start justify-between">
@@ -477,11 +525,10 @@ const CategoryPageContent = () => {
                           </div>
                           <button
                             onClick={() => toggleWishlist(product.id)}
-                            className={`p-2 rounded-full transition-colors ${
-                              wishlist.includes(product.id)
-                                ? 'text-red-500'
-                                : 'text-gray-400 hover:text-red-500'
-                            }`}
+                            className={`p-2 rounded-full transition-colors ${wishlist.includes(product.id)
+                              ? 'text-red-500'
+                              : 'text-gray-400 hover:text-red-500'
+                              }`}
                           >
                             {wishlist.includes(product.id) ? (
                               <FavoriteIcon className="w-6 h-6" />
@@ -516,11 +563,10 @@ const CategoryPageContent = () => {
                         <button
                           onClick={() => addToCart(product)}
                           disabled={!product.inStock}
-                          className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
-                            product.inStock
-                              ? 'bg-purple-600 text-white hover:bg-purple-700'
-                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                          }`}
+                          className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${product.inStock
+                            ? 'bg-purple-600 text-white hover:bg-purple-700'
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            }`}
                         >
                           <ShoppingCartIcon className="w-4 h-4" />
                           Add to Cart
@@ -552,7 +598,7 @@ const CategoryPageContent = () => {
         </div>
 
         {/* Bottom Promotional Banner */}
-        <div className="mt-12 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-8 text-white">
+        <div className="mt-12 bg-linear-to-r from-purple-600 to-indigo-600 rounded-xl p-8 text-white">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div>
               <h3 className="text-2xl font-bold mb-2">Subscribe & Save!</h3>

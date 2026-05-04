@@ -127,7 +127,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className='bg-[#001e3a] flex justify-between sticky top-0 items-center z-30'>
+      <nav className='bg-[#001e3a] flex justify-between sticky top-0 items-center z-50'>
         {/* <div className={`relative w-64 h-16 ${bgColor} rounded-br-[30px] `}>
                    <div className="  w-16 h-16 pointer-events-none overflow-hidden">
 
@@ -438,12 +438,13 @@ const Navbar = () => {
                   <span className="font-medium text-sm group-hover:text-[#001e3a] transition-colors">My Wishlist</span>
                 </Link>
                 {user && (
-                  <Link href="/user_profile" onClick={() => setMobileMenuOpen(false)} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-all">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-blue-100/50 group-hover:text-blue-600 transition-colors">
+                  <Link href={`/user_profile/${user.id}`} onClick={() => setMobileMenuOpen(false)} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-transparent transition-all">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-green-100/50 group-hover:text-green-600 transition-colors">
                       <PersonIcon className="w-4 h-4" />
                     </div>
                     <span className="font-medium text-sm group-hover:text-[#001e3a] transition-colors">My Account</span>
                   </Link>
+
                 )}
               </div>
 

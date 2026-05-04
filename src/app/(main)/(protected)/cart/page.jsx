@@ -17,14 +17,12 @@ import PercentIcon from '@mui/icons-material/Percent'
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward'
 import StarIcon from '@mui/icons-material/Star'
 
-import productsData from '@/config/products.json'
-import categoriesData from '@/config/categories.json'
-
 const NAV_BG = '#001e3a'
 const ACCENT = '#0f3c4c'
 
 const CartContent = () => {
   const [cartItems, setCartItems] = useState([])
+  const [recommendedProducts, setRecommendedProducts] = useState([])
   const [promoCode, setPromoCode] = useState('')
   const [promoApplied, setPromoApplied] = useState(false)
   const [notification, setNotification] = useState(null)
@@ -35,20 +33,49 @@ const CartContent = () => {
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    const shuffled = [...productsData].sort(() => 0.5 - Math.random())
-    const itemsWithQuantity = shuffled.slice(0, 4).map(product => ({
-      ...product,
-      quantity: Math.floor(Math.random() * 3) + 1,
-      isWishlisted: Math.random() > 0.5
-    }))
-    setCartItems(itemsWithQuantity)
-  }, [])
+  const fetchCartItems = async () => {
+    const res = await fetch('/api/user/cart', { cache: 'no-store' })
+    const data = await res.json()
 
-  const getCategoryName = (categoryId) => {
-    const category = categoriesData.find(cat => cat.id === categoryId)
-    return category?.name || 'Unknown'
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to fetch cart')
+    }
+
+    setCartItems(Array.isArray(data.cart) ? data.cart : [])
   }
+
+  const fetchRecommendedProducts = async () => {
+    const res = await fetch('/api/product/search/result?q=a&limit=6&sort=rating', { cache: 'no-store' })
+    const data = await res.json()
+
+    if (!res.ok) {
+      return
+    }
+
+    const products = Array.isArray(data.products) ? data.products : []
+    setRecommendedProducts(products.map((product) => ({
+      id: String(product._id || product.id),
+      slug: product.slug || '',
+      name: product.name || '',
+      image: product.image || '',
+      price: Number(product.salePrice || product.price || 0),
+      originalPrice: Number(product.price || 0),
+    })))
+  }
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        await fetchCartItems()
+      } catch {
+        showNotification('Unable to load cart from database', 'error')
+      }
+
+      fetchRecommendedProducts()
+    }
+
+    load()
+  }, [])
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type })
@@ -57,32 +84,99 @@ const CartContent = () => {
 
   const updateQuantity = (productId, newQuantity) => {
     if (newQuantity < 1) return
+
+    const previousItems = cartItems
     setCartItems(prev =>
-      prev.map(item =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      )
+      prev.map(item => (item.id === productId ? { ...item, quantity: newQuantity } : item))
     )
+
+    fetch('/api/user/cart', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId, quantity: newQuantity })
+    })
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to update quantity')
+        setCartItems(Array.isArray(data.cart) ? data.cart : [])
+      })
+      .catch(() => {
+        setCartItems(previousItems)
+        showNotification('Unable to update quantity', 'error')
+      })
   }
 
   const removeFromCart = (productId) => {
+    const previousItems = cartItems
     setCartItems(prev => prev.filter(item => item.id !== productId))
-    showNotification('Item removed from cart')
+
+    fetch('/api/user/cart', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId })
+    })
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to remove item')
+        setCartItems(Array.isArray(data.cart) ? data.cart : [])
+        showNotification('Item removed from cart')
+      })
+      .catch(() => {
+        setCartItems(previousItems)
+        showNotification('Unable to remove item', 'error')
+      })
   }
 
   const toggleWishlist = (productId) => {
-    setCartItems(prev =>
-      prev.map(item =>
-        item.id === productId ? { ...item, isWishlisted: !item.isWishlisted } : item
-      )
-    )
     const item = cartItems.find(i => i.id === productId)
-    showNotification(item?.isWishlisted ? 'Removed from wishlist' : 'Added to wishlist')
+    if (!item) return
+
+    const shouldAdd = !item.isWishlisted
+    const previousItems = cartItems
+
+    setCartItems(prev =>
+      prev.map(i => (i.id === productId ? { ...i, isWishlisted: shouldAdd } : i))
+    )
+
+    fetch('/api/user/wishlist', {
+      method: shouldAdd ? 'POST' : 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId })
+    })
+      .then(async (res) => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to update wishlist')
+        if (Array.isArray(data.wishlist)) {
+          const ids = new Set(data.wishlist.map((entry) => entry.id))
+          setCartItems(prev => prev.map(i => ({ ...i, isWishlisted: ids.has(i.id) })))
+        }
+        showNotification(shouldAdd ? 'Added to wishlist' : 'Removed from wishlist')
+      })
+      .catch(() => {
+        setCartItems(previousItems)
+        showNotification('Unable to update wishlist', 'error')
+      })
   }
 
   const clearCart = () => {
     if (confirm('Are you sure you want to clear your cart?')) {
+      const previousItems = cartItems
       setCartItems([])
-      showNotification('Cart cleared')
+
+      fetch('/api/user/cart', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+        .then(async (res) => {
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error || 'Failed to clear cart')
+          setCartItems(Array.isArray(data.cart) ? data.cart : [])
+          showNotification('Cart cleared')
+        })
+        .catch(() => {
+          setCartItems(previousItems)
+          showNotification('Unable to clear cart', 'error')
+        })
     }
   }
 
@@ -118,7 +212,7 @@ const CartContent = () => {
       {/* Hero Header – matches landing page style */}
       <div
         className="relative w-full overflow-hidden"
-        style={{ background: `linear-gradient(135deg, ${NAV_BG} 0%, ${ACCENT} 100%)`, minHeight: '220px' }}
+        style={{ background: `linear-gradient(135deg, ${NAV_BG} 0%, ${ACCENT} 100%)`, minHeight: '150px' }}
       >
         {/* Floating particles */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -128,12 +222,12 @@ const CartContent = () => {
           <div className="absolute top-[75%] left-[30%] w-2.5 h-2.5 bg-white/10 rounded-full animate-[floatParticle_12s_ease-in-out_infinite_0.5s]" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 relative z-10">
           <div className={`transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
             <p className="text-white/60 text-sm font-medium tracking-widest uppercase mb-2">Your Selection</p>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-white mb-1">Shopping</h1>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-medium text-white">Cart</h1>
-            <p className="text-white/50 mt-3 text-sm">{cartItems.length} item{cartItems.length !== 1 ? 's' : ''} selected</p>
+            <p className="text-white/50 mt-2 text-sm">{cartItems.length} item{cartItems.length !== 1 ? 's' : ''} selected</p>
           </div>
         </div>
 
@@ -186,7 +280,7 @@ const CartContent = () => {
                   >
                     <div className="flex flex-col sm:flex-row gap-0">
                       {/* Image */}
-                      <div className="relative sm:w-48 h-52 sm:h-auto flex-shrink-0 bg-gray-50">
+                      <div className="relative sm:w-48 h-52 sm:h-auto shrink-0 bg-gray-50">
                         <img
                           src={item.image}
                           alt={item.name}
@@ -207,7 +301,7 @@ const CartContent = () => {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
                             <span className="text-xs font-semibold tracking-widest uppercase text-[#0f3c4c]/60">
-                              {getCategoryName(item.categoryId)}
+                              {item.category || 'Unknown'}
                             </span>
                             <h3 className="text-xl font-semibold text-[#001e3a] mt-0.5 leading-snug">{item.name}</h3>
                             <p className="text-gray-400 text-sm mt-1 line-clamp-2">{item.description}</p>
@@ -216,7 +310,7 @@ const CartContent = () => {
                             </span>
                           </div>
                           {/* Price desktop */}
-                          <div className="hidden sm:block text-right flex-shrink-0">
+                          <div className="hidden sm:block text-right shrink-0">
                             <p className="text-2xl font-bold text-[#001e3a]">${item.price}</p>
                             <p className="text-sm text-gray-300 line-through">${Math.round(item.price * 1.25)}</p>
                             <p className="text-emerald-500 text-xs font-semibold mt-0.5">Save 20%</p>
@@ -474,7 +568,7 @@ const CartContent = () => {
               <h2 className="text-3xl font-light text-[#001e3a]">Frequently <span className="font-bold">Bought Together</span></h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {productsData.slice(10, 16).map((product) => (
+              {recommendedProducts.map((product) => (
                 <Link href={`/product/${product.slug}`} key={product.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                   <div className="aspect-square bg-gray-50 overflow-hidden">
                     <img
@@ -487,7 +581,7 @@ const CartContent = () => {
                     <h4 className="text-sm font-semibold text-[#001e3a] truncate">{product.name}</h4>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-[#001e3a] font-bold text-sm">${product.price}</p>
-                      <p className="text-xs text-gray-300 line-through">${Math.round(product.price * 1.25)}</p>
+                      <p className="text-xs text-gray-300 line-through">${Math.round(product.originalPrice || product.price * 1.25)}</p>
                     </div>
                   </div>
                 </Link>
