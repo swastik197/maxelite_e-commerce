@@ -20,7 +20,6 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import CameraAltIcon from '@mui/icons-material/CameraAlt'
 import SaveIcon from '@mui/icons-material/Save'
 import ordersData from '@/config/orders.json'
-import productsData from '@/config/products.json'
 
 // ─── Toast Notification ──────────────────────────────────────────────
 const Toast = ({ message, type, onClose }) => {
@@ -36,8 +35,8 @@ const Toast = ({ message, type, onClose }) => {
   }
 
   return (
-    <div className="fixed top-6 right-6 z-[100] animate-[slideIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">
-      <div className={`${styles[type]} border rounded-2xl px-5 py-3.5 shadow-lg flex items-center gap-3 min-w-[300px]`}>
+    <div className="fixed top-6 right-6 z-100 animate-[slideIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">
+      <div className={`${styles[type]} border rounded-2xl px-5 py-3.5 shadow-lg flex items-center gap-3 min-w-75`}>
         {type === 'success' && <CheckCircleIcon className="w-5 h-5" />}
         {type === 'error' && <CancelIcon className="w-5 h-5" />}
         <span className="text-sm font-medium flex-1">{message}</span>
@@ -77,11 +76,50 @@ const UserProfileContent = () => {
   }, [user])
 
   useEffect(() => {
-    const shuffled = [...productsData].sort(() => 0.5 - Math.random())
-    setRecentlyViewed(shuffled.slice(0, 6))
-    setWishlistItems(shuffled.slice(6, 10))
-    const filteredOrders = ordersData.filter(order => order.userId === 'user_1').slice(0, 5)
-    setUserOrders(filteredOrders.length > 0 ? filteredOrders : ordersData.slice(0, 5))
+    const loadProfileProducts = async () => {
+      try {
+        const [recentRes, wishlistRes] = await Promise.all([
+          fetch('/api/product/search/result?q=a&limit=10&sort=rating', { cache: 'no-store' }),
+          fetch('/api/user/wishlist', { cache: 'no-store' }),
+        ])
+
+        if (recentRes.ok) {
+          const recentData = await recentRes.json()
+          const recentProducts = (Array.isArray(recentData.products) ? recentData.products : []).map((product) => ({
+            id: String(product._id || product.id),
+            slug: product.slug || '',
+            name: product.name || '',
+            image: product.image || '',
+            price: Number(product.salePrice || product.price || 0),
+            rating: Number(product.rating || 0),
+          }))
+          setRecentlyViewed(recentProducts.slice(0, 6))
+        }
+
+        if (wishlistRes.ok) {
+          const wishlistData = await wishlistRes.json()
+          const wishlistProducts = (Array.isArray(wishlistData.wishlist) ? wishlistData.wishlist : []).map((item) => ({
+            id: String(item.id || item._id),
+            slug: item.slug || '',
+            name: item.name || '',
+            image: item.image || '',
+            price: Number(item.salePrice || item.price || 0),
+            rating: Number(item.rating || 0),
+          }))
+          setWishlistItems(wishlistProducts.slice(0, 4))
+        }
+
+        const filteredOrders = ordersData.filter(order => order.userId === 'user_1').slice(0, 5)
+        setUserOrders(filteredOrders.length > 0 ? filteredOrders : ordersData.slice(0, 5))
+      } catch {
+        setRecentlyViewed([])
+        setWishlistItems([])
+        const filteredOrders = ordersData.filter(order => order.userId === 'user_1').slice(0, 5)
+        setUserOrders(filteredOrders.length > 0 ? filteredOrders : ordersData.slice(0, 5))
+      }
+    }
+
+    loadProfileProducts()
   }, [])
 
   const showToast = (message, type = 'success') => setToast({ message, type })
@@ -156,12 +194,12 @@ const UserProfileContent = () => {
   const handleLogout = () => { if (confirm('Are you sure you want to logout?')) logout() }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-purple-50/30 to-blue-50/40 relative">
+    <div className="min-h-screen bg-linear-to-br from-white via-purple-50/30 to-blue-50/40 relative">
       {/* Decorative background shapes */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-purple-200/20 blur-[100px]" />
-        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-blue-200/20 blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-teal-100/10 blur-[120px]" />
+        <div className="absolute -top-40 -right-40 w-150 h-150 rounded-full bg-purple-200/20 blur-[100px]" />
+        <div className="absolute -bottom-40 -left-40 w-125 h-125 rounded-full bg-blue-200/20 blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-175 h-175 rounded-full bg-teal-100/10 blur-[120px]" />
       </div>
 
       {/* Toast */}
@@ -169,7 +207,7 @@ const UserProfileContent = () => {
 
       {/* ─── Header Banner ─────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0f3c4c] via-[#1a5568] to-[#0f3c4c]" />
+        <div className="absolute inset-0 bg-linear-to-r from-[#0f3c4c] via-[#1a5568] to-[#0f3c4c]" />
         {/* Animated decorative elements in header */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-[float_8s_ease-in-out_infinite]" />
@@ -182,7 +220,7 @@ const UserProfileContent = () => {
               <div className="flex items-center gap-5 sm:gap-8">
                 {/* Avatar with upload */}
                 <div className="relative group">
-                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-400 to-blue-400 p-[3px] shadow-xl shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow duration-500">
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-linear-to-br from-purple-400 to-blue-400 p-0.75 shadow-xl shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow duration-500">
                     <div className="w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden bg-white">
                       <img
                         src={user?.profilepic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=7c3aed&color=fff&size=150&font-size=0.4&bold=true`}
@@ -194,7 +232,7 @@ const UserProfileContent = () => {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingPic}
-                    className="absolute inset-[3px] rounded-2xl sm:rounded-3xl bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center cursor-pointer backdrop-blur-sm"
+                    className="absolute inset-0.75 rounded-2xl sm:rounded-3xl bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center cursor-pointer backdrop-blur-sm"
                   >
                     {uploadingPic ? (
                       <div className="w-6 h-6 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
@@ -265,7 +303,7 @@ const UserProfileContent = () => {
         <div className="flex flex-col lg:flex-row gap-8">
 
           {/* ─── Sidebar ──────────────────────────────────────────── */}
-          <div className="hidden md:flex flex-col w-72 flex-shrink-0">
+          <div className="hidden md:flex flex-col w-72 shrink-0">
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100/80 overflow-hidden animate-[fadeInLeft_0.4s_ease-out]">
               <div className="p-3">
                 {menuItems.map((item, i) => (
@@ -273,7 +311,7 @@ const UserProfileContent = () => {
                     style={{ animationDelay: `${i * 0.05}s` }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-200 mb-1 animate-[fadeInLeft_0.3s_ease-out_both] ${
                       activeSection === item.id
-                        ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 border-l-[3px] border-purple-500 shadow-sm'
+                        ? 'bg-linear-to-r from-purple-50 to-blue-50 text-purple-700 border-l-[3px] border-purple-500 shadow-sm'
                         : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
                     }`}>
                     {item.icon}
@@ -292,7 +330,7 @@ const UserProfileContent = () => {
 
             {/* Promo Card */}
             <div className="mt-6 relative overflow-hidden rounded-2xl animate-[fadeInLeft_0.4s_ease-out_0.3s_both]">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#0f3c4c] via-[#1a5568] to-[#0f3c4c]" />
+              <div className="absolute inset-0 bg-linear-to-br from-[#0f3c4c] via-[#1a5568] to-[#0f3c4c]" />
               <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-2xl" />
                 <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
@@ -316,8 +354,8 @@ const UserProfileContent = () => {
             {/* ─── Promo Banners ────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 group animate-[fadeInUp_0.4s_ease-out]">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#0f3c4c] to-[#1a5568]" />
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-linear-to-br from-[#0f3c4c] to-[#1a5568]" />
+                <div className="absolute inset-0 bg-linear-to-r from-purple-600/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative p-6 flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-white text-lg">Get 20% Off!</h3>
@@ -329,8 +367,8 @@ const UserProfileContent = () => {
                 </div>
               </div>
               <div className="relative overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 group animate-[fadeInUp_0.4s_ease-out_0.1s_both]">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-purple-800" />
-                <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-linear-to-br from-purple-600 to-purple-800" />
+                <div className="absolute inset-0 bg-linear-to-r from-pink-500/10 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative p-6 flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-white text-lg">Free Shipping</h3>
@@ -409,8 +447,8 @@ const UserProfileContent = () => {
                     </button>
                   </div>
                   {currentAddress.street ? (
-                    <div className="flex items-start gap-4 bg-gradient-to-r from-gray-50 to-transparent p-4 rounded-xl">
-                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+                    <div className="flex items-start gap-4 bg-linear-to-r from-gray-50 to-transparent p-4 rounded-xl">
+                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
                         <LocationOnIcon className="w-5 h-5 text-teal-500" />
                       </div>
                       <div>
@@ -621,7 +659,7 @@ const UserProfileContent = () => {
                     <div className="border-2 border-purple-200 rounded-2xl p-5 relative bg-purple-50/30 hover:border-purple-300 transition-all duration-300">
                       <span className="absolute -top-2.5 left-4 bg-purple-600 text-white text-[10px] font-semibold px-3 py-0.5 rounded-full uppercase tracking-wider">Default</span>
                       <div className="flex items-start gap-3 mt-2">
-                        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
                           <LocationOnIcon className="w-5 h-5 text-purple-600" />
                         </div>
                         <div className="flex-1">
@@ -687,7 +725,7 @@ const UserProfileContent = () => {
                   Cancel
                 </button>
                 <button type="submit" disabled={saving}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-500 hover:to-purple-600 transition-all text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-[0.98]">
+                  className="flex-1 px-4 py-3 bg-linear-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-500 hover:to-purple-600 transition-all text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-[0.98]">
                   {saving ? <div className="w-4 h-4 border-2 border-white/50 border-t-transparent rounded-full animate-spin" /> : <><SaveIcon className="w-4 h-4" /> Save Changes</>}
                 </button>
               </div>
@@ -750,7 +788,7 @@ const UserProfileContent = () => {
                   Cancel
                 </button>
                 <button type="submit" disabled={saving}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-500 hover:to-purple-600 transition-all text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-[0.98]">
+                  className="flex-1 px-4 py-3 bg-linear-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-500 hover:to-purple-600 transition-all text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-[0.98]">
                   {saving ? <div className="w-4 h-4 border-2 border-white/50 border-t-transparent rounded-full animate-spin" /> : <><SaveIcon className="w-4 h-4" /> Save Address</>}
                 </button>
               </div>

@@ -14,7 +14,6 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HistoryIcon from '@mui/icons-material/History';
 import { useAuth } from '@/context/AuthContext';
 import categoriesData from '@/config/categories.json';
-import productsData from '@/config/products.json';
 
 const Navbar = () => {
   const { user, logout, loading, openAuthModal } = useAuth()
@@ -65,17 +64,34 @@ const Navbar = () => {
 
   // Filter products based on search query
   useEffect(() => {
-    if (searchQuery.trim().length > 0) {
-      const filtered = productsData
-        .filter(product =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .slice(0, 6)
-      setSuggestions(filtered)
-    } else {
-      setSuggestions([])
+    const controller = new AbortController()
+
+    const loadSuggestions = async () => {
+      if (searchQuery.trim().length === 0) {
+        setSuggestions([])
+        return
+      }
+
+      try {
+        const res = await fetch(`/api/product/search?q=${encodeURIComponent(searchQuery.trim())}&limit=6`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+
+        if (!res.ok) throw new Error('Search failed')
+
+        const data = await res.json()
+        setSuggestions(Array.isArray(data.products) ? data.products : [])
+      } catch {
+        if (!controller.signal.aborted) {
+          setSuggestions([])
+        }
+      }
     }
+
+    loadSuggestions()
+
+    return () => controller.abort()
   }, [searchQuery])
 
   const handleSearch = (e) => {
@@ -183,7 +199,7 @@ const Navbar = () => {
                 <Link
                   key={category.id}
                   href={`/category?slug=${category.slug}`}
-                  className='group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-violet-50 cursor-pointer transition-all duration-200'
+                  className='group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-linear-to-r hover:from-purple-50 hover:to-violet-50 cursor-pointer transition-all duration-200'
                 >
                   <span className='flex items-center justify-center w-9 h-9 rounded-lg bg-purple-100/60 text-[#001D39] group-hover:bg-[#001D39] group-hover:text-white group-hover:shadow-md group-hover:shadow-purple-200 transition-all duration-200 text-sm font-bold'>
                     {category.name.charAt(0)}
@@ -408,7 +424,7 @@ const Navbar = () => {
               <div className="px-5 pb-3 border-b border-gray-100">
                 {user ? (
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-purple-200">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-purple-200">
                       {user.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -417,7 +433,7 @@ const Navbar = () => {
                     </div>
                   </div>
                 ) : (
-                  <button onClick={() => { openAuthModal(); setMobileMenuOpen(false); }} className="w-full py-2.5 bg-gradient-to-r from-[#001e3a] to-[#003666] text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-900/30 transition-all duration-200">
+                  <button onClick={() => { openAuthModal(); setMobileMenuOpen(false); }} className="w-full py-2.5 bg-linear-to-r from-[#001e3a] to-[#003666] text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-900/30 transition-all duration-200">
                     Login / Sign Up
                   </button>
                 )}
@@ -425,20 +441,20 @@ const Navbar = () => {
 
               {/* Quick Actions */}
               <div className="px-3 flex flex-col gap-1 mt-1">
-                <Link href="/cart" onClick={(e) => { setMobileMenuOpen(false); handleProtectedNavigation(e); }} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-transparent transition-all">
+                <Link href="/cart" onClick={(e) => { setMobileMenuOpen(false); handleProtectedNavigation(e); }} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-linear-to-r hover:from-purple-50 hover:to-transparent transition-all">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-purple-100/50 group-hover:text-purple-600 transition-colors">
                     <ShoppingCartIcon className="w-4 h-4" />
                   </div>
                   <span className="font-medium text-sm group-hover:text-[#001e3a] transition-colors">Shopping Cart</span>
                 </Link>
-                <Link href="/wishlist" onClick={(e) => { setMobileMenuOpen(false); handleProtectedNavigation(e); }} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-transparent transition-all">
+                <Link href="/wishlist" onClick={(e) => { setMobileMenuOpen(false); handleProtectedNavigation(e); }} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-linear-to-r hover:from-pink-50 hover:to-transparent transition-all">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-pink-100/50 group-hover:text-pink-600 transition-colors">
                     <FavoriteBorderIcon className="w-4 h-4" />
                   </div>
                   <span className="font-medium text-sm group-hover:text-[#001e3a] transition-colors">My Wishlist</span>
                 </Link>
                 {user && (
-                  <Link href={`/user_profile/${user.id}`} onClick={() => setMobileMenuOpen(false)} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-transparent transition-all">
+                  <Link href={`/user_profile/${user.id}`} onClick={() => setMobileMenuOpen(false)} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-linear-to-r hover:from-green-50 hover:to-transparent transition-all">
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 group-hover:bg-green-100/50 group-hover:text-green-600 transition-colors">
                       <PersonIcon className="w-4 h-4" />
                     </div>

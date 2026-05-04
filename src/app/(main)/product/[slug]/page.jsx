@@ -22,9 +22,6 @@ import RemoveIcon from '@mui/icons-material/Remove'
 import SecurityIcon from '@mui/icons-material/Security'
 import CachedIcon from '@mui/icons-material/Cached'
 
-import productsData from '@/config/products.json'
-import categoriesData from '@/config/categories.json'
-
 const NAV = '#001e3a'
 const ACCENT = '#0f3c4c'
 
@@ -48,20 +45,109 @@ const ProductDetailPage = () => {
   }, [])
 
   useEffect(() => {
-    const foundProduct = productsData.find(p => p.slug === slug)
-    if (foundProduct) {
-      setProduct(foundProduct)
-      const related = productsData
-        .filter(p => p.categoryId === foundProduct.categoryId && p.id !== foundProduct.id)
-        .slice(0, 4)
-      setRelatedProducts(related)
+    const loadProduct = async () => {
+      setLoading(true)
+
+      try {
+        const searchQuery = decodeURIComponent(slug || '').replace(/-/g, ' ')
+        const searchUrl = new URL('/api/product/search/result', window.location.origin)
+        searchUrl.searchParams.set('slug', slug)
+        searchUrl.searchParams.set('q', searchQuery)
+        searchUrl.searchParams.set('limit', '20')
+        searchUrl.searchParams.set('sort', 'relevance')
+
+        const res = await fetch(searchUrl.toString(), { cache: 'no-store' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to load product')
+
+        const products = Array.isArray(data.products) ? data.products : []
+        const slugBase = String(slug || '').replace(/-\d+$/, '')
+        const exactMatch = products.find((item) => String(item.slug) === String(slug))
+          || products.find((item) => String(item.slug) === slugBase)
+          || products[0] || null
+
+        if (!exactMatch) {
+          setProduct(null)
+          setRelatedProducts([])
+          return
+        }
+
+        const mappedProduct = {
+          id: String(exactMatch._id || exactMatch.id),
+          name: exactMatch.name || '',
+          slug: exactMatch.slug || '',
+          description: exactMatch.description || '',
+          price: Number(exactMatch.salePrice || exactMatch.price || 0),
+          originalPrice: Number(exactMatch.price || 0),
+          image: exactMatch.image || '',
+          category: exactMatch.category || '',
+          rating: Number(exactMatch.rating || 0),
+          stock: Number(exactMatch.stock || 0),
+          inStock: Number(exactMatch.stock || 0) > 0,
+          isSale: Boolean(exactMatch.isSale),
+        }
+
+        setProduct(mappedProduct)
+
+        const relatedUrl = new URL('/api/product/search/result', window.location.origin)
+        relatedUrl.searchParams.set('q', mappedProduct.category || searchQuery)
+        relatedUrl.searchParams.set('category', mappedProduct.category || searchQuery)
+        relatedUrl.searchParams.set('limit', '8')
+        relatedUrl.searchParams.set('sort', 'rating')
+
+        const relatedRes = await fetch(relatedUrl.toString(), { cache: 'no-store' })
+        const relatedData = await relatedRes.json()
+        if (relatedRes.ok) {
+          const related = (Array.isArray(relatedData.products) ? relatedData.products : [])
+            .filter((item) => String(item._id || item.id) !== mappedProduct.id)
+            .slice(0, 4)
+            .map((item) => ({
+              id: String(item._id || item.id),
+              name: item.name || '',
+              slug: item.slug || '',
+              description: item.description || '',
+              price: Number(item.salePrice || item.price || 0),
+              originalPrice: Number(item.price || 0),
+              image: item.image || '',
+              category: item.category || '',
+              rating: Number(item.rating || 0),
+              stock: Number(item.stock || 0),
+              inStock: Number(item.stock || 0) > 0,
+            }))
+          setRelatedProducts(related)
+        }
+      } catch {
+        setProduct(null)
+        setRelatedProducts([])
+      } finally {
+        setLoading(false)
+      }
     }
-    setLoading(false)
+
+    loadProduct()
   }, [slug])
 
-  const getCategoryName = (categoryId) => {
-    const category = categoriesData.find(cat => cat.id === categoryId)
-    return category?.name || 'Unknown'
+  useEffect(() => {
+    if (!product) return
+
+    const syncWishlistState = async () => {
+      try {
+        const res = await fetch('/api/user/wishlist', { cache: 'no-store' })
+        if (!res.ok) return
+
+        const data = await res.json()
+        const wishlist = Array.isArray(data.wishlist) ? data.wishlist : []
+        setIsWishlisted(wishlist.some((item) => String(item.id) === String(product.id)))
+      } catch {
+        // Keep the UI usable if the user is not authenticated yet.
+      }
+    }
+
+    syncWishlistState()
+  }, [product])
+
+  const getCategoryName = () => {
+    return product?.category || 'Unknown'
   }
 
   const showNotification = (message, type = 'success') => {
@@ -69,10 +155,45 @@ const ProductDetailPage = () => {
     setTimeout(() => setNotification(null), 3000)
   }
 
-  const addToCart = () => showNotification(`${product.name} added to cart!`)
-  const toggleWishlist = () => {
-    setIsWishlisted(!isWishlisted)
-    showNotification(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist!')
+  const addToCart = async () => {
+    if (!product?.id) return
+
+    try {
+      const res = await fetch('/api/user/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id, quantity })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add to cart')
+
+      showNotification(`${product.name} added to cart!`)
+    } catch {
+      showNotification('Unable to add to cart', 'error')
+    }
+  }
+
+  const toggleWishlist = async () => {
+    if (!product?.id) return
+
+    const shouldAdd = !isWishlisted
+
+    try {
+      const res = await fetch('/api/user/wishlist', {
+        method: shouldAdd ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update wishlist')
+
+      setIsWishlisted(shouldAdd)
+      showNotification(shouldAdd ? 'Added to wishlist!' : 'Removed from wishlist')
+    } catch {
+      showNotification('Unable to update wishlist', 'error')
+    }
   }
 
   const renderStars = (rating) => {
@@ -115,9 +236,9 @@ const ProductDetailPage = () => {
 
   const productImages = [
     product.image,
-    product.image.replace('text=', 'text=Side+View+'),
-    product.image.replace('text=', 'text=Back+View+'),
-    product.image.replace('text=', 'text=Detail+'),
+    product.image ? product.image.replace('text=', 'text=Side+View+') : '',
+    product.image ? product.image.replace('text=', 'text=Back+View+') : '',
+    product.image ? product.image.replace('text=', 'text=Detail+') : '',
   ]
 
   return (
@@ -144,8 +265,8 @@ const ProductDetailPage = () => {
           <div className={`flex items-center gap-2 text-white/50 text-sm transition-all duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <ArrowForwardIosIcon sx={{ fontSize: 10 }} />
-            <Link href={`/category?slug=${categoriesData.find(c => c.id === product.categoryId)?.slug}`} className="hover:text-white transition-colors">
-              {getCategoryName(product.categoryId)}
+            <Link href={`/results/${encodeURIComponent(product.category || '')}`} className="hover:text-white transition-colors">
+              {getCategoryName()}
             </Link>
             <ArrowForwardIosIcon sx={{ fontSize: 10 }} />
             <span className="text-white/80 truncate max-w-xs">{product.name}</span>
@@ -160,10 +281,10 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-2">
+      <div className="max-w-7xl mx-auto px- sm:px-6 lg:px-8 py-8 -mt-2">
 
         {/* ── Main Product Card ── */}
-        <div className={`bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+        <div className={`bg-white rounded-3xl border border-gray-100 shadow- overflow-hidden mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
           <div className="grid grid-cols-1 lg:grid-cols-2">
 
             {/* Images */}
@@ -174,9 +295,9 @@ const ProductDetailPage = () => {
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${selectedImage === index ? 'border-[#001e3a] shadow-md scale-105' : 'border-transparent hover:border-[#001e3a]/30'}`}
+                    className={`w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${selectedImage === index ? 'border-[#001e3a] shadow-md scale-105' : 'border-transparent hover:border-[#001e3a]/30'}`}
                   >
-                    <img src={img} alt={`View ${index + 1}`} className="w-full h-full object-cover" />
+                    <img src={img || product.image || ''} alt={`View ${index + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -185,7 +306,7 @@ const ProductDetailPage = () => {
               <div className="flex-1 relative">
                 <div className="aspect-square rounded-2xl overflow-hidden bg-white shadow-inner relative group">
                   <img
-                    src={productImages[selectedImage]}
+                    src={productImages[selectedImage] || product.image || ''}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
@@ -214,7 +335,7 @@ const ProductDetailPage = () => {
               <div className="space-y-5">
                 {/* Category + name */}
                 <div>
-                  <span className="text-xs font-bold tracking-widest uppercase text-[#001e3a]/50">{getCategoryName(product.categoryId)}</span>
+                  <span className="text-xs font-bold tracking-widest uppercase text-[#001e3a]/50">{getCategoryName()}</span>
                   <h1 className="text-2xl lg:text-3xl font-light text-[#001e3a] mt-1 leading-snug">
                     {product.name.split(' ').slice(0, -1).join(' ')}{' '}
                     <span className="font-bold">{product.name.split(' ').slice(-1)}</span>
@@ -394,7 +515,7 @@ const ProductDetailPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl overflow-hidden border border-gray-100">
                   {[
                     ['Product ID', product.id],
-                    ['Category', getCategoryName(product.categoryId)],
+                    ['Category', getCategoryName()],
                     ['Currency', product.currency || 'USD'],
                     ['Rating', `${product.rating} / 5.0`],
                     ['Availability', product.inStock ? 'In Stock' : 'Out of Stock'],
@@ -509,7 +630,7 @@ const ProductDetailPage = () => {
             <h2 className="text-2xl font-light text-[#001e3a]">You May Also <span className="font-bold">Like</span></h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            {productsData.slice(0, 6).map((item) => (
+            {relatedProducts.slice(0, 6).map((item) => (
               <Link
                 href={`/product/${item.slug}`}
                 key={item.id}
@@ -520,7 +641,7 @@ const ProductDetailPage = () => {
                 </div>
                 <div className="p-3">
                   <h3 className="text-xs font-semibold text-[#001e3a] truncate">{item.name}</h3>
-                  <p className="text-[#001e3a] font-bold text-sm mt-1">${item.price}</p>
+                    <p className="text-[#001e3a] font-bold text-sm mt-1">${item.price}</p>
                 </div>
               </Link>
             ))}

@@ -1,7 +1,6 @@
 'use client'
 import React, { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
-import productsData from '@/config/products.json'
 import categoriesData from '@/config/categories.json'
 import { useAuth } from '@/context/AuthContext'
 
@@ -33,7 +32,7 @@ const Hero = () => {
   const featured2ScrollRef = useRef(null)
   const { openAuthModal } = useAuth()
 
-  const featuredProducts = productsData.slice(0, 8)
+  const [featuredProducts, setFeaturedProducts] = useState([])
   const promotionalCategories = categoriesData.slice(0, 6)
 
   // Scroll reveal refs for each section
@@ -53,6 +52,31 @@ const Hero = () => {
     if (ref?.current) ref.current.scrollBy({ left: 300, behavior: 'smooth' })
   }
 
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      try {
+        const res = await fetch('/api/product/search/result?q=a&limit=8&sort=rating', { cache: 'no-store' })
+        if (!res.ok) return
+
+        const data = await res.json()
+        const mapped = (Array.isArray(data.products) ? data.products : []).map((product) => ({
+          id: String(product._id || product.id),
+          slug: product.slug || '',
+          name: product.name || '',
+          image: product.image || '',
+          price: Number(product.salePrice || product.price || 0),
+          rating: Number(product.rating || 0),
+          inStock: Number(product.stock || 0) > 0,
+        }))
+        setFeaturedProducts(mapped)
+      } catch {
+        setFeaturedProducts([])
+      }
+    }
+
+    loadFeaturedProducts()
+  }, [])
+
   return (
     <>
     {/* bg-[#001D39] */}
@@ -61,7 +85,7 @@ const Hero = () => {
           <h2 className={`text-2xl font-bold text-white md:mx-10 mt-4 mb-4 transition-all duration-700 `}>
             Trending Products
             {/* Animated underline */}
-            <div className={`h-1 bg-gradient-to-r from-purple-500 via-blue-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-300 ${trendingVisible ? 'w-40 opacity-100' : 'w-0 opacity-0'}`} />
+            <div className={`h-1 bg-linear-to-r from-purple-500 via-blue-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-300 ${trendingVisible ? 'w-40 opacity-100' : 'w-0 opacity-0'}`} />
           </h2>
 
           <button
@@ -82,9 +106,9 @@ const Hero = () => {
                 href={`/product/${product.slug}`}
                 key={product.id}
                 style={{ transitionDelay: `${i * 80}ms` }}
-                className={`md:min-w-[260px] min-w-[200px] z-20 mt-4 bg-white rounded-md shadow-md overflow-hidden group hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-3 transition-all duration-500`}
+                className={`md:min-w-65 min-w-50 z-20 mt-4 bg-white rounded-md shadow-md overflow-hidden group hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-3 transition-all duration-500`}
               >
-                <div className='h-58 md:h-48 lg:h-72 bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden'>
+                <div className='h-58 md:h-48 lg:h-72 bg-linear-to-br from-gray-50 to-gray-100 relative overflow-hidden'>
                   <img
                     src={product.image}
                     alt={product.name}
@@ -102,7 +126,7 @@ const Hero = () => {
                       </svg>
                     </button>
                   </div>
-                  <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/20 to-transparent h-16'></div>
+                  <div className='absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/20 to-transparent h-16'></div>
                   <div className='absolute bottom-2 p-1.5 bg-white rounded-2xl left-2 flex items-center gap-1 mb-2'>
                     <div className='flex items-center gap-0.5'>
                       {[...Array(5)].map((_, i) => (
@@ -146,12 +170,12 @@ const Hero = () => {
           {/* Main Banner */}
           <div
             style={{ backgroundImage: "url('/Gemini_Generated_Image_m6og39m6og39m6og.png')" }}
-            className={`col-span-1 sm:col-span-2 bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-[200px] sm:min-h-0 transition-all duration-1000 ease-out ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x- scale-[0.97]'
+            className={`col-span-1 sm:col-span-2 bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-50 sm:min-h-0 transition-all duration-1000 ease-out ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x- scale-[0.97]'
               }`}
           >
             <div className='absolute inset-0 bg-black/40'></div>
             {/* Shimmer effect overlay */}
-            <div className='absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-[shimmer_3s_ease-in-out_infinite] -skew-x-12' />
+            <div className='absolute inset-0 bg-linear-to-r from-transparent via-white/5 to-transparent animate-[shimmer_3s_ease-in-out_infinite] -skew-x-12' />
             <div className='relative z-10 text-center text-white p-5 sm:p-8'>
               <p className={`text-purple-200 text-xs sm:text-sm mb-1 sm:mb-2 transition-all duration-700 delay-300 ${bannerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 New Arrivals
@@ -164,7 +188,7 @@ const Hero = () => {
               </p>
               <Link
                 href='/category?slug=living-room'
-                className={`inline-block bg-white text-purple-700 px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-purple-100 hover:shadow-lg hover:shadow-white/20 hover:-translate-y-0.5 transition-all duration-300 active:scale-95 ${bannerVisible ? 'opacity-100 translate-y-0 delay-[900ms]' : 'opacity-0 translate-y-4'}`}
+                className={`inline-block bg-white text-purple-700 px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-purple-100 hover:shadow-lg hover:shadow-white/20 hover:-translate-y-0.5 transition-all duration-300 active:scale-95 ${bannerVisible ? 'opacity-100 translate-y-0 delay-900' : 'opacity-0 translate-y-4'}`}
               >
                 Shop Now
               </Link>
@@ -174,24 +198,24 @@ const Hero = () => {
           {/* Flash Sale Banner */}
           <div
             style={{ backgroundImage: "url('/Gemini_Generated_Image_hx8i9jhx8i9jhx8i.png')" }}
-            className={`bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-[160px] sm:min-h-0 transition-all duration-1000 ease-out delay-300 ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-0 scale-[0.97]'
+            className={`bg-cover bg-center rounded-lg flex items-center justify-center relative overflow-hidden min-h-40 sm:min-h-0 transition-all duration-1000 ease-out delay-300 ${bannerVisible ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-0 scale-[0.97]'
               }`}
           >
             <div className='absolute inset-0 bg-black/40'></div>
             <div className='relative z-10 text-center text-white p-4 sm:p-6'>
               <p className={`text-pink-200 text-xs mb-1 sm:mb-2 transition-all duration-500 delay-700 ${bannerVisible ? 'opacity-100' : 'opacity-0'}`}>Limited Time</p>
-              <h3 className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 transition-all duration-500 delay-[800ms] ${bannerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Flash Sale</h3>
-              <p className={`text-3xl sm:text-4xl font-bold mb-1 sm:mb-2 transition-all duration-700 delay-[900ms] ${bannerVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
+              <h3 className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 transition-all duration-500 delay-800 ${bannerVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>Flash Sale</h3>
+              <p className={`text-3xl sm:text-4xl font-bold mb-1 sm:mb-2 transition-all duration-700 delay-900 ${bannerVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
                 30% OFF
               </p>
-              <p className={`text-pink-200 text-xs sm:text-sm transition-all duration-500 delay-[1000ms] ${bannerVisible ? 'opacity-100' : 'opacity-0'}`}>On all decor items</p>
+              <p className={`text-pink-200 text-xs sm:text-sm transition-all duration-500 delay-1000 ${bannerVisible ? 'opacity-100' : 'opacity-0'}`}>On all decor items</p>
             </div>
           </div>
         </div>
 
         {/* Promo strips */}
         <div ref={promoRef} className='hidden md:grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
-          <div className={`bg-gradient-to-r from-amber-400 to-orange-400 rounded-lg flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 overflow-hidden group hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-500 cursor-pointer ${promoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          <div className={`bg-linear-to-r from-amber-400 to-orange-400 rounded-lg flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 overflow-hidden group hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-500 cursor-pointer ${promoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`} style={{ transitionDuration: '700ms' }}>
             <div className='text-white'>
               <p className='text-amber-100 text-xs sm:text-sm'>Free Shipping</p>
@@ -200,7 +224,7 @@ const Hero = () => {
             </div>
             <div className='text-4xl sm:text-6xl group-hover:scale-125 group-hover:rotate-12 transition-all duration-500'>🚚</div>
           </div>
-          <div className={`bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-500 cursor-pointer ${promoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          <div className={`bg-linear-to-r from-emerald-500 to-teal-500 rounded-lg flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-500 cursor-pointer ${promoVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`} style={{ transitionDuration: '700ms', transitionDelay: '150ms' }}>
             <div className='text-white'>
               <p className='text-emerald-100 text-xs sm:text-sm'>Member Exclusive</p>
@@ -219,7 +243,7 @@ const Hero = () => {
           <h2 className={`text-2xl font-bold text-white mx-3 md:mx-10 mt-2 mb-4 transition-all duration-700 ${featuredVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
             Featured Products
             {/* Animated underline */}
-            <div className={`h-1 bg-gradient-to-r from-purple-500 via-blue-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-300 ${featuredVisible ? 'w-40 opacity-100' : 'w-0 opacity-0'}`} />
+            <div className={`h-1 bg-linear-to-r from-purple-500 via-blue-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-300 ${featuredVisible ? 'w-40 opacity-100' : 'w-0 opacity-0'}`} />
           </h2>
 
           <button
@@ -240,10 +264,10 @@ const Hero = () => {
                 href={`/product/${product.slug}`}
                 key={product.id}
                 style={{ transitionDelay: `${i * 80}ms` }}
-                className={`md:min-w-[260px] min-w-[200px] z-20 mt-4 bg-white rounded-md shadow-md overflow-hidden group hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-3 transition-all duration-500 ${featuredVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-95'
+                className={`md:min-w-65 min-w-50 z-20 mt-4 bg-white rounded-md shadow-md overflow-hidden group hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-3 transition-all duration-500 ${featuredVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-95'
                   }`}
               >
-                <div className='h-58 md:h-48 lg:h-72 bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden'>
+                <div className='h-58 md:h-48 lg:h-72 bg-linear-to-br from-gray-50 to-gray-100 relative overflow-hidden'>
                   <img
                     src={product.image}
                     alt={product.name}
@@ -261,7 +285,7 @@ const Hero = () => {
                       </svg>
                     </button>
                   </div>
-                  <div className='absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/20 to-transparent h-16'></div>
+                  <div className='absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/20 to-transparent h-16'></div>
                   <div className='absolute bottom-2 p-1.5 bg-white rounded-lg left-2 flex items-center gap-1 mb-2'>
                     <div className='flex items-center gap-0.5'>
                       {[...Array(5)].map((_, i) => (
@@ -303,7 +327,7 @@ const Hero = () => {
       <section ref={categoryRef} className='my-0.5 bg-[#0A4174]  mx-1 rounded-lg py-8 px-4'>
         <h2 className={`text-2xl font-bold text-white mx-2 mb-6 transition-all duration-700 ${categoryVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}>
           Shop by Category
-          <div className={`h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-200 ${categoryVisible ? 'w-36 opacity-100' : 'w-0 opacity-0'}`} />
+          <div className={`h-1 bg-linear-to-r from-emerald-400 via-teal-400 to-transparent rounded-full mt-2 transition-all duration-1000 delay-200 ${categoryVisible ? 'w-36 opacity-100' : 'w-0 opacity-0'}`} />
         </h2>
         <div className='grid grid-rows-2 grid-flow-col gap-3 overflow-x-auto scrollbar-hide px-2 md:grid-rows-none md:grid-cols-3 md:grid-flow-row md:gap-5 md:overflow-x-visible'>
           {promotionalCategories.map((category, index) => {
@@ -321,12 +345,12 @@ const Hero = () => {
                   category.image ? { backgroundImage: `url('${category.image}')` } : {},
                   { transitionDelay: `${index * 150}ms` }
                 )}
-                className={`h-58 md:h-72 min-w-58 md:min-w-0 flex-shrink-0 md:flex-shrink rounded-md relative overflow-hidden group bg-cover bg-center ${category.image ? '' : `bg-gradient-to-br ${bgColors[index]}`} transition-all duration-700 ease-out hover:shadow-2xl hover:shadow-purple-500/15 hover:-translate-y-2 ${categoryVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-10 scale-95'
+                className={`h-58 md:h-72 min-w-58 md:min-w-0 shrink-0 md:shrink rounded-md relative overflow-hidden group bg-cover bg-center ${category.image ? '' : `bg-linear-to-br ${bgColors[index]}`} transition-all duration-700 ease-out hover:shadow-2xl hover:shadow-purple-500/15 hover:-translate-y-2 ${categoryVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-10 scale-95'
                   }`}
               >
                 <div className='absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors duration-500'></div>
                 {/* Hover shimmer */}
-                <div className='absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-[shimmer_1.5s_ease-in-out] -skew-x-12 transition-opacity duration-300' />
+                <div className='absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-[shimmer_1.5s_ease-in-out] -skew-x-12 transition-opacity duration-300' />
                 <div className='relative z-10 h-full flex flex-col justify-end p-6 text-white'>
                   <h3 className='text-2xl font-bold mb-1 group-hover:translate-x-1 transition-transform duration-300'>{category.name}</h3>
                   <p className='text-white/80 text-sm mb-3 group-hover:translate-x-1 transition-transform duration-300 delay-75'>{category.description}</p>
@@ -344,8 +368,8 @@ const Hero = () => {
       </section>
 
       {/* ═══ Visit Our Store ═══════════════════════════════════════ */}
-      <section ref={ctaRef} className='mx-4 my-8'>
-        <div className={`bg-gradient-to-br from-[#0A4174] via-[#0d5298] to-[#1a6bb5] rounded-xl p-8 md:p-12 text-white relative overflow-hidden transition-all duration-1000 ease-out ${ctaVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-[0.97]'}`}>
+      <section ref={ctaRef} className='mx-1 mt-8'>
+        <div className={`bg-linear-to-br from-[#0A4174] via-[#0d5298] to-[#1a6bb5] rounded- p-8 md:p-12 text-white relative overflow-hidden transition-all duration-1000 ease-out ${ctaVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-12 scale-[0.97]'}`}>
           {/* Decorative animated circles */}
           <div className='absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 animate-[pulse_4s_ease-in-out_infinite]' />
           <div className='absolute bottom-0 right-0 w-96 h-96 bg-white/5 rounded-full translate-x-1/3 translate-y-1/3 animate-[pulse_5s_ease-in-out_infinite_1s]' />
@@ -360,7 +384,7 @@ const Hero = () => {
                 </svg>
                 <h2 className='text-3xl md:text-4xl font-bold'>Visit Our Store</h2>
               </div>
-              <div className='h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-transparent rounded-full w-48 mx-auto mt-3' />
+              <div className='h-1 bg-linear-to-r from-blue-400 via-purple-400 to-transparent rounded-full w-48 mx-auto mt-3' />
             </div>
 
             {/* Address Cards */}
@@ -379,7 +403,7 @@ const Hero = () => {
               </div>
 
               {/* Head Office */}
-              <div className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:-translate-y-1 transition-all duration-300 ${ctaVisible ? 'opacity-100 translate-y-0 delay-[450ms]' : 'opacity-0 translate-y-8'}`}>
+              <div className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6 hover:bg-white/15 hover:-translate-y-1 transition-all duration-300 ${ctaVisible ? 'opacity-100 translate-y-0 delay-450' : 'opacity-0 translate-y-8'}`}>
                 <div className='flex items-center gap-2 mb-3'>
                   <span className='bg-purple-400/30 text-purple-200 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide'>Address</span>
                 </div>
@@ -393,9 +417,9 @@ const Hero = () => {
             </div>
 
             {/* Contact */}
-            <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700 delay-[600ms] ${ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+            <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700 delay-600 ${ctaVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
               <div className='flex items-center gap-2 bg-white/10 border border-white/20 rounded-lg px-5 py-3 hover:bg-white/15 transition-all duration-300'>
-                <svg className='w-5 h-5 text-green-300 flex-shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                <svg className='w-5 h-5 text-green-300 shrink-0' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
                   <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z' />
                 </svg>
                 <div>

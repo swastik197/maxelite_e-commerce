@@ -68,7 +68,7 @@ function ProductCard({ product, wishlisted, onWishlist, index }) {
                 className="bg-white rounded-2xl shadow-md overflow-hidden group hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-2 transition-all duration-500 block"
             >
                 {/* Image */}
-                <div className="relative h-52 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                <div className="relative h-52 bg-linear-to-br from-gray-50 to-gray-100 overflow-hidden">
                     {product.image ? (
                         <img
                             src={product.image}
@@ -80,7 +80,7 @@ function ProductCard({ product, wishlisted, onWishlist, index }) {
                     )}
 
                     {/* Gradient overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-black/20 to-transparent" />
 
                     {/* Badges */}
                     {product.isSale && (
@@ -118,7 +118,7 @@ function ProductCard({ product, wishlisted, onWishlist, index }) {
                     {product.category && (
                         <p className="text-xs text-purple-500 font-medium mb-1 uppercase tracking-wide">{product.category}</p>
                     )}
-                    <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 min-h-[40px] group-hover:text-purple-700 transition-colors duration-300">
+                    <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 min-h-10 group-hover:text-purple-700 transition-colors duration-300">
                         {product.name}
                     </h3>
                     <div className="flex items-center justify-between mt-2 flex-wrap gap-1">
@@ -192,9 +192,46 @@ const ResultsPage = () => {
 
     useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
+    useEffect(() => {
+        const syncWishlist = async () => {
+            try {
+                const res = await fetch('/api/user/wishlist', { cache: 'no-store' });
+                if (!res.ok) return;
+
+                const data = await res.json();
+                const wishlistItems = Array.isArray(data.wishlist) ? data.wishlist : [];
+                setWishlist(wishlistItems.map((item) => String(item.id)));
+            } catch {
+                // Leave the current local state untouched if the user is not signed in.
+            }
+        };
+
+        syncWishlist();
+    }, []);
+
     const handleSort = (v) => { setActiveSort(v); setPage(1); };
     const handleRating = (s) => { setMinRating(p => p === s ? 0 : s); setPage(1); };
-    const toggleWishlist = (id) => setWishlist(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+    const toggleWishlist = async (id) => {
+        const shouldAdd = !wishlist.includes(id);
+        const previousWishlist = wishlist;
+
+        setWishlist(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+
+        try {
+            const res = await fetch('/api/user/wishlist', {
+                method: shouldAdd ? 'POST' : 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: id })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to update wishlist');
+
+            setWishlist((Array.isArray(data.wishlist) ? data.wishlist : []).map((item) => String(item.id)));
+        } catch {
+            setWishlist(previousWishlist);
+        }
+    };
 
     // Page number list
     const pageNums = () => {
@@ -257,7 +294,7 @@ const ResultsPage = () => {
             <div className="flex gap-3 mx-1 mt-2">
 
                 {/* ── Sidebar ── */}
-                <aside className="hidden md:block w-56 flex-shrink-0">
+                <aside className="hidden md:block w-56 shrink-0">
                     <div className="bg-white rounded-2xl shadow-sm overflow-hidden sticky top-4">
                         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2" style={{ background: `linear-gradient(90deg, ${TEAL_MID}20, transparent)` }}>
                             <svg className="w-4 h-4 text-[#49769F]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>

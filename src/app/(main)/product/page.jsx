@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import StarIcon from '@mui/icons-material/Star'
@@ -25,6 +25,7 @@ const ProductPage = () => {
   const [selectedColor, setSelectedColor] = useState(0)
   const [activeTab, setActiveTab] = useState('description')
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const [productId, setProductId] = useState('')
 
   // Sample product data
   const product = {
@@ -62,6 +63,37 @@ const ProductPage = () => {
       chatReply: 98
     }
   }
+
+  useEffect(() => {
+    const syncProductActions = async () => {
+      try {
+        const url = new URL('/api/product/search/result', window.location.origin)
+        url.searchParams.set('q', product.name)
+        url.searchParams.set('limit', '20')
+
+        const res = await fetch(url.toString(), { cache: 'no-store' })
+        const data = await res.json()
+        if (!res.ok) return
+
+        const match = (Array.isArray(data.products) ? data.products : []).find((item) => item.name === product.name) || null
+        if (!match) return
+
+        const resolvedId = String(match._id || match.id)
+        setProductId(resolvedId)
+
+        const wishlistRes = await fetch('/api/user/wishlist', { cache: 'no-store' })
+        if (!wishlistRes.ok) return
+
+        const wishlistData = await wishlistRes.json()
+        const wishlist = Array.isArray(wishlistData.wishlist) ? wishlistData.wishlist : []
+        setIsWishlisted(wishlist.some((item) => String(item.id) === resolvedId))
+      } catch {
+        // Fall back to the local demo state if the DB search does not find a match.
+      }
+    }
+
+    syncProductActions()
+  }, [product.name])
 
   // Styling ideas data
   const stylingIdeas = [
@@ -150,6 +182,11 @@ const ProductPage = () => {
     return new Intl.NumberFormat('id-ID').format(price)
   }
 
+  const showNotification = (message) => {
+    // Kept intentionally minimal for this demo page.
+    window.alert(message)
+  }
+
   const renderStars = (rating, size = 'small') => {
     const stars = []
     const fullStars = Math.floor(rating)
@@ -165,6 +202,53 @@ const ProductPage = () => {
       stars.push(<StarBorderIcon key={i} fontSize={size} className="text-yellow-400" />)
     }
     return stars
+  }
+
+  const addToCart = async () => {
+    if (!productId) {
+      showNotification('Unable to locate this product in the database.')
+      return
+    }
+
+    try {
+      const res = await fetch('/api/user/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity: 1 })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add to cart')
+
+      showNotification(`${product.name} added to cart!`)
+    } catch {
+      showNotification('Unable to add to cart')
+    }
+  }
+
+  const toggleWishlist = async () => {
+    if (!productId) {
+      showNotification('Unable to locate this product in the database.')
+      return
+    }
+
+    const shouldAdd = !isWishlisted
+
+    try {
+      const res = await fetch('/api/user/wishlist', {
+        method: shouldAdd ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update wishlist')
+
+      setIsWishlisted(shouldAdd)
+      showNotification(shouldAdd ? 'Added to wishlist!' : 'Removed from wishlist')
+    } catch {
+      showNotification('Unable to update wishlist')
+    }
   }
 
   return (
@@ -288,10 +372,10 @@ const ProductPage = () => {
 
               {/* Action Buttons */}
               <div className="space-y-3 pt-4">
-                <button className="w-full bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-700 transition">
+                <button onClick={addToCart} className="w-full bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-700 transition">
                   Buy this Item
                 </button>
-                <button className="w-full border border-gray-800 text-gray-800 py-3 rounded-lg font-medium hover:bg-gray-50 transition">
+                <button onClick={addToCart} className="w-full border border-gray-800 text-gray-800 py-3 rounded-lg font-medium hover:bg-gray-50 transition">
                   Add to Bag
                 </button>
               </div>
@@ -303,7 +387,7 @@ const ProductPage = () => {
                   <span className="text-sm">Chat</span>
                 </button>
                 <button 
-                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  onClick={toggleWishlist}
                   className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition"
                 >
                   {isWishlisted ? (
@@ -423,7 +507,7 @@ const ProductPage = () => {
             </div>
 
             {/* Rating Breakdown */}
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-50">
               {reviewStats.breakdown.map((item) => (
                 <div key={item.stars} className="flex items-center gap-2 text-sm">
                   <span className="w-4">{item.stars}</span>

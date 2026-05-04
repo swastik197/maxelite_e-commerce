@@ -21,10 +21,6 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 
-// Import data from config
-import productsData from '@/config/products.json'
-import categoriesData from '@/config/categories.json'
-
 const CategoryPageContent = () => {
   const searchParams = useSearchParams()
   const categorySlug = searchParams.get('slug') || 'living-room'
@@ -46,16 +42,72 @@ const CategoryPageContent = () => {
   const [selectedRatings, setSelectedRatings] = useState([])
   const [inStockOnly, setInStockOnly] = useState(false)
 
-  useEffect(() => {
-    // Find category by slug
-    const foundCategory = categoriesData.find(cat => cat.slug === categorySlug) || categoriesData[0]
-    setCategory(foundCategory)
+  const formatCategoryName = (slug) => {
+    return decodeURIComponent(slug || '')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+  }
 
-    // Filter products by category
-    const categoryProducts = productsData.filter(product => product.categoryId === foundCategory.id)
-    setProducts(categoryProducts)
-    setFilteredProducts(categoryProducts)
+  useEffect(() => {
+    const loadCategoryProducts = async () => {
+      const categoryName = formatCategoryName(categorySlug) || 'Category'
+      setCategory({
+        slug: categorySlug,
+        name: categoryName,
+        description: `Browse hand-picked ${categoryName.toLowerCase()} products available in the store.`,
+      })
+
+      try {
+        const url = new URL('/api/product/search/result', window.location.origin)
+        url.searchParams.set('q', categoryName)
+        url.searchParams.set('category', categoryName)
+        url.searchParams.set('limit', '40')
+        url.searchParams.set('sort', 'rating')
+
+        const res = await fetch(url.toString(), { cache: 'no-store' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Failed to load products')
+
+        const categoryProducts = (Array.isArray(data.products) ? data.products : []).map((product) => ({
+          id: String(product._id || product.id),
+          name: product.name || '',
+          slug: product.slug || '',
+          description: product.description || '',
+          image: product.image || '',
+          category: product.category || categoryName,
+          rating: Number(product.rating || 0),
+          price: Number(product.salePrice || product.price || 0),
+          originalPrice: Number(product.price || 0),
+          inStock: Number(product.stock || 0) > 0,
+        }))
+
+        setProducts(categoryProducts)
+        setFilteredProducts(categoryProducts)
+      } catch {
+        setProducts([])
+        setFilteredProducts([])
+      }
+    }
+
+    loadCategoryProducts()
   }, [categorySlug])
+
+  useEffect(() => {
+    const syncWishlist = async () => {
+      try {
+        const res = await fetch('/api/user/wishlist', { cache: 'no-store' })
+        if (!res.ok) return
+
+        const data = await res.json()
+        const wishlistItems = Array.isArray(data.wishlist) ? data.wishlist : []
+        setWishlist(wishlistItems.map((item) => String(item.id)))
+      } catch {
+        // Leave local wishlist state empty when the user is not authenticated.
+      }
+    }
+
+    syncWishlist()
+  }, [])
 
   useEffect(() => {
     // Apply filters and sorting
@@ -104,18 +156,50 @@ const CategoryPageContent = () => {
     setTimeout(() => setNotification(null), 3000)
   }
 
-  const toggleWishlist = (productId) => {
+  const toggleWishlist = async (productId) => {
+    const shouldAdd = !wishlist.includes(productId)
+    const previousWishlist = wishlist
+
     setWishlist(prev =>
       prev.includes(productId)
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
     )
-    const isAdding = !wishlist.includes(productId)
-    showNotification(isAdding ? 'Added to wishlist!' : 'Removed from wishlist')
+
+    try {
+      const res = await fetch('/api/user/wishlist', {
+        method: shouldAdd ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update wishlist')
+
+      const nextWishlist = Array.isArray(data.wishlist) ? data.wishlist.map((item) => String(item.id)) : []
+      setWishlist(nextWishlist)
+      showNotification(shouldAdd ? 'Added to wishlist!' : 'Removed from wishlist')
+    } catch {
+      setWishlist(previousWishlist)
+      showNotification('Unable to update wishlist', 'error')
+    }
   }
 
-  const addToCart = (product) => {
-    showNotification(`${product.name} added to cart!`)
+  const addToCart = async (product) => {
+    try {
+      const res = await fetch('/api/user/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id, quantity: 1 })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add to cart')
+
+      showNotification(`${product.name} added to cart!`)
+    } catch {
+      showNotification('Unable to add to cart', 'error')
+    }
   }
 
   const toggleRating = (rating) => {

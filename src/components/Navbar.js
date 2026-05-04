@@ -14,7 +14,6 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import HistoryIcon from '@mui/icons-material/History';
 import { useAuth } from '@/context/AuthContext';
 import categoriesData from '@/config/categories.json';
-import productsData from '@/config/products.json';
 
 const Navbar = () => {
   const { user, logout, loading, openAuthModal } = useAuth()
@@ -64,17 +63,34 @@ const Navbar = () => {
 
   // Filter products based on search query
   useEffect(() => {
-    if (searchQuery.trim().length > 0) {
-      const filtered = productsData
-        .filter(product => 
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .slice(0, 6)
-      setSuggestions(filtered)
-    } else {
-      setSuggestions([])
+    const controller = new AbortController()
+
+    const loadSuggestions = async () => {
+      if (searchQuery.trim().length === 0) {
+        setSuggestions([])
+        return
+      }
+
+      try {
+        const res = await fetch(`/api/product/search?q=${encodeURIComponent(searchQuery.trim())}&limit=6`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+
+        if (!res.ok) throw new Error('Search failed')
+
+        const data = await res.json()
+        setSuggestions(Array.isArray(data.products) ? data.products : [])
+      } catch {
+        if (!controller.signal.aborted) {
+          setSuggestions([])
+        }
+      }
     }
+
+    loadSuggestions()
+
+    return () => controller.abort()
   }, [searchQuery])
 
   const handleSearch = (e) => {

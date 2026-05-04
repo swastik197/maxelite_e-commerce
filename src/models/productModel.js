@@ -1,12 +1,14 @@
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({
+    legacyId: { type: String, index: true },
     name: String,
     slug: { type: String, index: true },
     description: String,
     price: Number,
     image: String,
     category: String,
+    categoryId: { type: String, index: true },
     rating: Number,
     numReviews: Number,
     stock: Number,
@@ -40,7 +42,7 @@ const productSchema = new mongoose.Schema({
             }
         }
     ]
-});
+}, { suppressReservedKeysWarning: true });
 
 const Product = mongoose.models.Product || mongoose.model("Product", productSchema);
 
