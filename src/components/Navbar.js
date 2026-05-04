@@ -126,7 +126,7 @@ const Navbar = () => {
   
   return (
     <>
-      <nav className='bg-purple-500 flex justify-between sticky items-center z-30'>
+      <nav className='bg-purple-500 flex justify-between sticky items-center z-50'>
         <div className='flex gap-6 items-center lg:mx-4'>
           <div className='w-24 h-10 bg-violet-900 mx-4 '>
             Heyyy
